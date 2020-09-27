@@ -1,7 +1,7 @@
 '''
 Application in Kivy to show the operation of updating the firmware of an Arduino board in python.
 '''
-
+import intelhex
 from kivy.lang import Builder
 from kivy.clock import Clock
 from kivymd.app import MDApp
@@ -10,6 +10,7 @@ import threading
 from queue import Queue
 
 from intelhex import IntelHex
+from intelhex import AddressOverlapError
 from arduinobootloader import ArduinoBootloader
 
 
@@ -26,7 +27,7 @@ Screen:
             spacing:10
             
             MDLabel:
-                text:"Software Version"
+                text:"Bootloader version"
             MDLabel:
                 id:sw_version
                 text:"--"
@@ -37,7 +38,7 @@ Screen:
             spacing:10
             
             MDLabel:
-                text:"Hardware Version"
+                text:"Bootloader hardware version"
             MDLabel:
                 id:hw_version
                 text:"--"
@@ -63,6 +64,18 @@ Screen:
             MDLabel:
                 id:file_info
                 text:"--"
+        MDBoxLayout:
+            orientation:"horizontal"
+            padding:10
+            spacing:10
+            
+            MDTextField
+                id:file_name
+                hint_text: "Intel HEX file format"
+                helper_text: "Please enter the file and path of the Arduino firmware"
+                helper_text_mode: "on_focus"
+                text:"test.hex"
+                        
         BoxLayout:
             padding: "10dp"
             orientation: "horizontal"
@@ -98,9 +111,19 @@ class MainApp(MDApp):
         return Builder.load_string(KV)
 
     def on_flash(self):
-        self.ih.fromfile('test.hex', format='hex')
+        del self.ih
 
-        self.root.ids.file_info.text = "start {} end {}".format(self.ih.minaddr(), self.ih.maxaddr())
+        try:
+            self.ih = IntelHex()
+            self.ih.fromfile(self.root.ids.file_name.text, format='hex')
+        except FileNotFoundError:
+            self.root.ids.file_info.text = "File not found"
+            return
+        except AddressOverlapError:
+            self.root.ids.file_info.text = "File with address overlapped"
+            return
+
+        self.root.ids.file_info.text = "start address: {} size: {} bytes".format(self.ih.minaddr(), self.ih.maxaddr())
 
         self.root.ids.progress.value = 0
         self.working_thread = threading.Thread(target=self.thread_flash)
@@ -156,15 +179,15 @@ class MainApp(MDApp):
             self.root.ids.cpu_version.text = self.ab.cpu_name
 
         if value[0] == "write":
-            self.root.ids.status.text = "Writing Flash %{:.2f}".format(value[1]*100)
+            self.root.ids.status.text = "Writing flash %{:.2f}".format(value[1]*100)
             self.root.ids.progress.value = value[1]
 
         if value[0] == "read":
-            self.root.ids.status.text = "Reading Flash %{:.2f}".format(value[1]*100)
+            self.root.ids.status.text = "Reading and verifying flash %{:.2f}".format(value[1]*100)
             self.root.ids.progress.value = value[1]
 
         if value[0] == "result" and value[1] == "ok":
-            self.root.ids.status.text = "Writing Flash %100.00"
+            self.root.ids.status.text = "Download done"
             self.root.ids.progress.value = 1
 
         if value[0] == "result" and value[1] == "error":
