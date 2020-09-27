@@ -132,8 +132,8 @@ class MainApp(MDApp):
         self.working_thread.start()
 
     def thread_flash(self):
-        """If you communicate with the bootloader through the serial port,
-           obtain information about the processor and the version of the bootloader."""
+        """If the communication with the bootloader through the serial port could be
+           established, obtains the information of the processor and the bootloader."""
         res_val = False
 
         if self.ab.open():
@@ -157,7 +157,7 @@ class MainApp(MDApp):
                 Clock.schedule_once(self.progress_callback, 1 / 1000)
 
             """If the write was successful, re-iterate the firmware file, and use the 
-               read flash command to update compare them."""
+               read flash command to update and compare them."""
             if res_val:
                 for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size):
                     buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size)

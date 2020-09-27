@@ -14,14 +14,14 @@ import time
 RESP_STK_OK = 0x10
 RESP_STK_IN_SYNC = 0x14
 
-# define various device id's
-# manufacturer byte is always the same
-# Yep, Atmel is the only manufacturer of AVR micros.  Single source :(
+""" The manufacturer byte is always the same (Atmel).
+"""
 SIG1_ATMEL = 0x1E
 
-# The dictionary key is made up of SIG2 and SIG3
-# The value is a list with the name of the CPU and the size of the flash page
-# Note: the size of the page is in byte not in words
+""" The dictionary key is made up of SIG2 and SIG3
+    The value is a list with the name of the CPU and the size in byte 
+    of the flash page.
+"""
 AVR_ATMEL_CPUS = {(0x97, 0x03): ["ATmega1280", (128*2)],
                   (0x97, 0x04): ["ATmega1281", (128*2)],
                   (0x97, 0x03): ["ATmega128", (128*2)],
