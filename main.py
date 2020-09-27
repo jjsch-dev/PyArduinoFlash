@@ -125,11 +125,15 @@ class MainApp(MDApp):
 
         self.root.ids.file_info.text = "start address: {} size: {} bytes".format(self.ih.minaddr(), self.ih.maxaddr())
 
+        """The firmware update is done in a worker thread because the main 
+           thread in Kivy is in charge of updating the widgets."""
         self.root.ids.progress.value = 0
         self.working_thread = threading.Thread(target=self.thread_flash)
         self.working_thread.start()
 
     def thread_flash(self):
+        """If you communicate with the bootloader through the serial port,
+           obtain information about the processor and the version of the bootloader."""
         res_val = False
 
         if self.ab.open():
@@ -141,6 +145,8 @@ class MainApp(MDApp):
                 self.progress_queue.put(["cpu_signature"])
                 Clock.schedule_once(self.progress_callback, 1 / 1000)
 
+            """Iterate the firmware file into chunks of the page size in bytes, and 
+               use the write flash command to update the cpu."""
             for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size):
                 buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size)
                 res_val = self.ab.write_memory(buffer, address)
@@ -150,6 +156,8 @@ class MainApp(MDApp):
                 self.progress_queue.put(["write", address / self.ih.maxaddr()])
                 Clock.schedule_once(self.progress_callback, 1 / 1000)
 
+            """If the write was successful, re-iterate the firmware file, and use the 
+               read flash command to update compare them."""
             if res_val:
                 for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size):
                     buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size)
@@ -169,6 +177,8 @@ class MainApp(MDApp):
         self.ab.close()
 
     def progress_callback(self, dt):
+        """In kivy only the main thread can update the widgets. Schedule a clock
+           event to read the message from the queue and update the progress."""
         value = self.progress_queue.get()
 
         if value[0] == "board_request":

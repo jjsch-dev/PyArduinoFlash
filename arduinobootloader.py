@@ -40,7 +40,7 @@ AVR_ATMEL_CPUS = {(0x97, 0x03): ["ATmega1280", (128*2)],
                   (0x93, 0x08): ["ATmega8535", (32*2)]}
 
 
-class ArduinoBootloader:
+class ArduinoBootloader(object):
     def __init__(self, *args, **kwargs):
         self.device = None
         self.port = None
