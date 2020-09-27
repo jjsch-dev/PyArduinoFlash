@@ -141,6 +141,8 @@ class MainApp(MDApp):
             self.progress_queue.put(["result", "ok" if res_val else "error", address])
             Clock.schedule_once(self.progress_callback, 1 / 1000)
 
+        self.ab.leave_prg_mode()
+
         self.ab.close()
 
     def progress_callback(self, dt):

@@ -204,6 +204,10 @@ class ArduinoBootloader:
                 return buffer
         return None
 
+    def leave_prg_mode(self):
+        """Tells the bootloader to leave programming mode and start executing the stored firmware"""
+        return self.cmd_request(b"Q ", answer_len=2)
+
     def close(self):
         """Close the serial communication port."""
         if self.device.is_open:
