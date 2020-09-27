@@ -182,6 +182,28 @@ class ArduinoBootloader:
             return self.cmd_request(cmd, answer_len=2)
         return False
 
+    def read_memory(self, address, count, flash=True):
+        """Read flash memory or eeprom from requested address."""
+        cmd = bytearray(4)
+        cmd[0] = ord('U')
+        cmd[1] = (address & 0xFF)
+        cmd[2] = ((address >> 8) & 0xFF)
+        cmd[3] = ord(' ')
+
+        if self.cmd_request(cmd, answer_len=2):
+            cmd[0] = ord('t')
+            cmd[1] = ((count >> 8) & 0xFF)
+            cmd[2] = (count & 0xFF)
+            cmd[3] = ord('F') if flash else ord('E')
+            cmd.append(ord(' '))
+
+            if self.cmd_request(cmd, answer_len=count+2):
+                # The answer start with RESP_STK_IN_SYNC and finish with RESP_STK_OK
+                buffer = bytearray(self._answer[1:count+1])
+
+                return buffer
+        return None
+
     def close(self):
         """Close the serial communication port."""
         if self.device.is_open:

@@ -118,17 +118,25 @@ class MainApp(MDApp):
                 self.progress_queue.put(["cpu_signature"])
                 Clock.schedule_once(self.progress_callback, 1 / 1000)
 
-            self.progress_queue.put("write")
-            Clock.schedule_once(self.progress_callback, 1 / 1000)
-
             for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size*2):
                 buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size*2)
                 res_val = self.ab.write_memory(buffer, int(address/2))
                 if not res_val:
                     break
 
-                self.progress_queue.put(["progress", address / self.ih.maxaddr()])
+                self.progress_queue.put(["write", address / self.ih.maxaddr()])
                 Clock.schedule_once(self.progress_callback, 1 / 1000)
+
+            if res_val:
+                for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size * 2):
+                    buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size * 2)
+                    read_buffer = self.ab.read_memory(int(address / 2), self.ab.cpu_page_size * 2)
+                    if not len(read_buffer) or (buffer != read_buffer):
+                        res_val = False
+                        break
+
+                    self.progress_queue.put(["read", address / self.ih.maxaddr()])
+                    Clock.schedule_once(self.progress_callback, 1 / 1000)
 
             self.progress_queue.put(["result", "ok" if res_val else "error", address])
             Clock.schedule_once(self.progress_callback, 1 / 1000)
@@ -146,10 +154,11 @@ class MainApp(MDApp):
             self.root.ids.cpu_version.text = self.ab.cpu_name
 
         if value[0] == "write":
-            self.root.ids.status.text = "Writing Flash (%0.0)"
-
-        if value[0] == "progress":
             self.root.ids.status.text = "Writing Flash %{:.2f}".format(value[1]*100)
+            self.root.ids.progress.value = value[1]
+
+        if value[0] == "read":
+            self.root.ids.status.text = "Reading Flash %{:.2f}".format(value[1]*100)
             self.root.ids.progress.value = value[1]
 
         if value[0] == "result" and value[1] == "ok":
