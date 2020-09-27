@@ -102,20 +102,17 @@ class ArduinoBootloader:
         return self.get_sync()
 
     def get_sync(self):
-        # First send and drain a few times to get rid of line noise
+        """Send the sync command whose function is to discard the reception buffers of both serial units.
+          The first time you send the sync command to get rid of the line noise with a 200mS timeout.
+        """
         self.device.timeout = 1 / 5
-
         for i in range(1, 2):
-            self.device.write(b"0 ")
-            self.device.read()
+            self.cmd_request(b"0 ", answer_len=2)
 
         self.device.timeout = 1
         for i in range(1, 3):
-            self.device.write(b"0 ")
-            val = self.device.read(2)
-            if len(val) == 2 and val[0] == RESP_STK_IN_SYNC and val[1] == RESP_STK_OK:
+            if self.cmd_request(b"0 ", answer_len=2):
                 return True
-
         return False
 
     def board_request(self):
