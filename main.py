@@ -141,9 +141,9 @@ class MainApp(MDApp):
                 self.progress_queue.put(["cpu_signature"])
                 Clock.schedule_once(self.progress_callback, 1 / 1000)
 
-            for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size*2):
-                buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size*2)
-                res_val = self.ab.write_memory(buffer, int(address/2))
+            for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size):
+                buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size)
+                res_val = self.ab.write_memory(buffer, address)
                 if not res_val:
                     break
 
@@ -151,9 +151,9 @@ class MainApp(MDApp):
                 Clock.schedule_once(self.progress_callback, 1 / 1000)
 
             if res_val:
-                for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size * 2):
-                    buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size * 2)
-                    read_buffer = self.ab.read_memory(int(address / 2), self.ab.cpu_page_size * 2)
+                for address in range(0, self.ih.maxaddr(), self.ab.cpu_page_size):
+                    buffer = self.ih.tobinarray(start=address, size=self.ab.cpu_page_size)
+                    read_buffer = self.ab.read_memory(address, self.ab.cpu_page_size)
                     if not len(read_buffer) or (buffer != read_buffer):
                         res_val = False
                         break

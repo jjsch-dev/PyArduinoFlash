@@ -21,22 +21,23 @@ SIG1_ATMEL = 0x1E
 
 # The dictionary key is made up of SIG2 and SIG3
 # The value is a list with the name of the CPU and the size of the flash page
-AVR_ATMEL_CPUS = {(0x97, 0x03): ["ATmega1280", 128],
-                  (0x97, 0x04): ["ATmega1281", 128],
-                  (0x97, 0x03): ["ATmega128", 128],
-                  (0x97, 0x02): ["ATmega64", 128],
-                  (0x95, 0x02): ["ATmega32", 64],
-                  (0x94, 0x03): ["ATmega16", 64],
-                  (0x93, 0x07): ["ATmega8", 32],
-                  (0x93, 0x0A): ["ATmega88", 32],
-                  (0x94, 0x06): ["ATmega168", 64],
-                  (0x95, 0x0F): ["ATmega328P", 64],
-                  (0x95, 0x14): ["ATmega328", 64],
-                  (0x94, 0x04): ["ATmega162", 64],
-                  (0x94, 0x02): ["ATmega163", 64],
-                  (0x94, 0x05): ["ATmega169", 64],
-                  (0x93, 0x06): ["ATmega8515", 32],
-                  (0x93, 0x08): ["ATmega8535", 32]}
+# Note: the size of the page is in byte not in words
+AVR_ATMEL_CPUS = {(0x97, 0x03): ["ATmega1280", (128*2)],
+                  (0x97, 0x04): ["ATmega1281", (128*2)],
+                  (0x97, 0x03): ["ATmega128", (128*2)],
+                  (0x97, 0x02): ["ATmega64", (128*2)],
+                  (0x95, 0x02): ["ATmega32", (64*2)],
+                  (0x94, 0x03): ["ATmega16", (64*2)],
+                  (0x93, 0x07): ["ATmega8", (32*2)],
+                  (0x93, 0x0A): ["ATmega88", (32*2)],
+                  (0x94, 0x06): ["ATmega168", (64*2)],
+                  (0x95, 0x0F): ["ATmega328P", (64*2)],
+                  (0x95, 0x14): ["ATmega328", (64*2)],
+                  (0x94, 0x04): ["ATmega162", (64*2)],
+                  (0x94, 0x02): ["ATmega163", (64*2)],
+                  (0x94, 0x05): ["ATmega169", (64*2)],
+                  (0x93, 0x06): ["ATmega8515", (32*2)],
+                  (0x93, 0x08): ["ATmega8535", (32*2)]}
 
 
 class ArduinoBootloader:
@@ -160,14 +161,11 @@ class ArduinoBootloader:
 
     def write_memory(self, buffer, address, flash=True):
         """Write the buffer to the requested address of the flash memory or eeprom."""
-        cmd = bytearray(4)
-        cmd[0] = ord('U')
-        cmd[1] = (address & 0xFF)
-        cmd[2] = ((address >> 8) & 0xFF)
-        cmd[3] = ord(' ')
 
-        if self.cmd_request(cmd, answer_len=2):
+        if self.set_address(address, flash):
             buff_len = len(buffer)
+
+            cmd = bytearray(4)
             cmd[0] = ord('d')
             cmd[1] = ((buff_len >> 8) & 0xFF)
             cmd[2] = (buff_len & 0xFF)
@@ -181,18 +179,14 @@ class ArduinoBootloader:
 
     def read_memory(self, address, count, flash=True):
         """Read flash memory or eeprom from requested address."""
-        cmd = bytearray(4)
-        cmd[0] = ord('U')
-        cmd[1] = (address & 0xFF)
-        cmd[2] = ((address >> 8) & 0xFF)
-        cmd[3] = ord(' ')
 
-        if self.cmd_request(cmd, answer_len=2):
+        if self.set_address(address, flash):
+            cmd = bytearray(5)
             cmd[0] = ord('t')
             cmd[1] = ((count >> 8) & 0xFF)
             cmd[2] = (count & 0xFF)
             cmd[3] = ord('F') if flash else ord('E')
-            cmd.append(ord(' '))
+            cmd[4] = ord(' ')
 
             if self.cmd_request(cmd, answer_len=count+2):
                 # The answer start with RESP_STK_IN_SYNC and finish with RESP_STK_OK
@@ -200,6 +194,20 @@ class ArduinoBootloader:
 
                 return buffer
         return None
+
+    def set_address(self, address, flash):
+        """The bootloader address flash is in words, and the eeprom in bytes."""
+        if flash:
+            address = int(address / 2)
+
+        """The address is in little endian format"""
+        cmd = bytearray(4)
+        cmd[0] = ord('U')
+        cmd[1] = (address & 0xFF)
+        cmd[2] = ((address >> 8) & 0xFF)
+        cmd[3] = ord(' ')
+
+        return self.cmd_request(cmd, answer_len=2)
 
     def leave_prg_mode(self):
         """Tells the bootloader to leave programming mode and start executing the stored firmware"""
