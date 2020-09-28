@@ -69,7 +69,7 @@ The next step is to establish the connection with the bootloader of the Arduino 
 
 As the library needs the information of the CPU to know the size of the page, it is necessary to use the functions ``ab.board_request()`` and ``ab.cpu_signature()``
 
-If the previous functions were executed successfully (they return ``True``), now you have to open the hexadecimal file with the ih.fromfile function. If there are errors in the format or the file path is invalid, exceptions are thrown.
+If the previous functions were executed successfully (they return ``True``), now you have to open the hexadecimal file with the ``ih.fromfile("firmware_file.hex", format='hex')`` function. If there are errors in the format or the file path is invalid, exceptions are thrown.
 
 As the CPU flash is recorded by pages, with the function ``ih.tobinarray(start=address, size=ab.cpu_page_size)`` the current page is obtained (according to the address).
 
