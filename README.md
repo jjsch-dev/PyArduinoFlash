@@ -81,12 +81,12 @@ The reading to verify the recording is done in the same way, with the exception 
 
 The bootloader begins the execution of the firmware after a period of time without receiving communication; nevertheless it is convenient to execute the function ``ab.leave_prg_mode()``.
 
-And to release the serial port you have to execute the function ``ab.close()``.
+Finally, to release the serial port, you have to execute the function ``ab.close()``.
 
 Support
 -------
 
-If you need assistance, you can ask for help on our mailing list:
+If you need assistance, contact me:
 
 * Email      : juanschiavoni@gmail.com
 
