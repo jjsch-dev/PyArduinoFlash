@@ -40,7 +40,7 @@ Documentation and Examples
             ab.close()
             return
         
-        print("cpu name: {}".format(self.ab.cpu_name) )
+        print("cpu name: {}".format(ab.cpu_name) )
         
         ih.fromfile("firmware_file.hex", format='hex')
         
@@ -54,7 +54,7 @@ Documentation and Examples
         
         for address in range(0, ih.maxaddr(), ab.cpu_page_size):
             buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
-            read_buffer ab.read_memory(address, ab.cpu_page_size)
+            read_buffer = ab.read_memory(address, ab.cpu_page_size)
             if not len(read_buffer):
                print("Read error") 
                break
