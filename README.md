@@ -79,7 +79,7 @@ For the bootloader to write it, you have to use the function ``ab.write_memory(b
 
 The reading to verify the recording is done in the same way, with the exception that the function returns the buffer read. If it is ``None`` it indicates that there were problems.
 
-Although the bootloader begins the execution of the firmware after a period of time without receiving communication, it is convenient to execute the function ``ab.leave_prg_mode()``.
+The bootloader begins the execution of the firmware after a period of time without receiving communication; nevertheless it is convenient to execute the function ``ab.leave_prg_mode()``.
 
 And to release the serial port you have to execute the function ``ab.close()``.
 
