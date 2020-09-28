@@ -75,7 +75,7 @@ If the previous functions were executed successfully (they return ``True``), now
 
 As the CPU flash is recorded by pages, with the function ``ih.tobinarray(start=address, size=ab.cpu_page_size)`` the current page is obtained (according to the address).
 
-For the bootloader to write it, you have to use the function ``ab.write_memory(buffer, address)`` which is passed the buffer plus the current address. Returns True when completed successfully.
+For the bootloader to write it, you have to use the function ``ab.write_memory(buffer, address)`` which take the buffer and the current address as parameters. Returns True when completed successfully.
 
 The reading to verify the recording is done in the same way, with the exception that the function return the buffer read. If it is None it indicates that there were problems.
 
