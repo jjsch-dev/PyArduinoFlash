@@ -64,7 +64,7 @@ Documentation and Examples
         ab.leave_prg_mode()
         ab.close()
 ```
-The parsing of the file in Intel hexadecimal format is done with the [IntelHex](https://github.com/python-intelhex/intelhex) library.
+The parsing of the file in [Intel hexadecimal format](https://en.wikipedia.org/wiki/Intel_HEX) is done with the [IntelHex](https://github.com/python-intelhex/intelhex) library.
 
 To have an instance of the class use ``ab = ArduinoBootloader()``
 The next step is to establish the connection with the bootloader of the Arduino board with ``ab.open()`` that returns ``True`` when it was successful.
