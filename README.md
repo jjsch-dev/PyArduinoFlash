@@ -2,7 +2,7 @@ PyArduinoFlash
 ====
 
 
-PyArduinoFlash is an open source in Python for updating the firmware 
+PyArduinoFlash is an open source library in Python for updating the firmware 
 of Arduino boards that use the ``ATmegaBOOT_168.c`` bootloader, for example [Arduino Nano](https://store.arduino.cc/usa/arduino-nano).
 
 The intention is to have a class that can be imported into any python project to update the Arduinos through the serial port.
