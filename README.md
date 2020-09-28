@@ -30,16 +30,18 @@ Documentation and Examples
     ab = ArduinoBootloader()
 
     if ab.open():
-        if ab.board_request():
-            print("botloader version: {} hardware version: {}".format(ab.sw_version, ab.hw_version))
+        if not ab.board_request():
             ab.close()
             return 
-
-        if ab.cpu_signature():
-            print("cpu name: {}".format(self.ab.cpu_name) )
+        
+        print("botloader version: {} hardware version: {}".format(ab.sw_version, ab.hw_version))
+  
+        if not ab.cpu_signature():
             ab.close()
             return
-
+        
+        print("cpu name: {}".format(self.ab.cpu_name) )
+        
         ih.fromfile("firmware_file.hex", format='hex')
         
         for address in range(0, ih.maxaddr(), ab.cpu_page_size):
@@ -73,9 +75,9 @@ As the library needs the information of the CPU to know the size of the page, it
 
 If the previous functions were executed successfully (they return ``True``), now you have to open the hexadecimal file with the ``ih.fromfile("firmware_file.hex", format='hex')`` function. If there are errors in the format or the file path is invalid, exceptions are thrown.
 
-As the CPU flash is recorded by pages, with the function ``ih.tobinarray(start=address, size=ab.cpu_page_size)`` the current page is obtained (according to the address).
+As the CPU is flashed by pages, with the function ``ih.tobinarray(start=address, size=ab.cpu_page_size)`` the current page is obtained (according to the address).
 
-For the bootloader to write it, you have to use the function ``ab.write_memory(buffer, address)`` which take the buffer and the current address as parameters. Returns ``True`` when completed successfully.
+For the bootloader to write it, use the function ``ab.write_memory(buffer, address)`` which take the buffer and the current address as parameters. Returns ``True`` when completed successfully.
 
 The reading to verify the recording is done in the same way, with the exception that the function returns the buffer read. If it is ``None`` it indicates that there were problems.
 
