@@ -67,7 +67,7 @@ Documentation and Examples
 The parsing of the file in [Intel hexadecimal format](https://en.wikipedia.org/wiki/Intel_HEX) is done with the [IntelHex](https://github.com/python-intelhex/intelhex) library.
 
 To have an instance of the class use ``ab = ArduinoBootloader()``
-The next step is to establish the connection with the bootloader of the Arduino board with ``ab.open()`` that returns ``True`` when it was successful.
+The next step is to establish the connection with the bootloader of the Arduino board with ``ab.open()`` that returns ``True`` when it is successful.
 
 As the library needs the information of the CPU to know the size of the page, it is necessary to use the functions ``ab.board_request()`` and ``ab.cpu_signature()``
 
