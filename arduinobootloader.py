@@ -19,25 +19,25 @@ RESP_STK_IN_SYNC = 0x14
 SIG1_ATMEL = 0x1E
 
 """ The dictionary key is made up of SIG2 and SIG3
-    The value is a list with the name of the CPU and the size in byte 
-    of the flash page.
+    The value is a list with the name of the CPU the page size in byte 
+    and the flash pages.
 """
-AVR_ATMEL_CPUS = {(0x97, 0x03): ["ATmega1280", (128*2)],
-                  (0x97, 0x04): ["ATmega1281", (128*2)],
-                  (0x97, 0x03): ["ATmega128", (128*2)],
-                  (0x97, 0x02): ["ATmega64", (128*2)],
-                  (0x95, 0x02): ["ATmega32", (64*2)],
-                  (0x94, 0x03): ["ATmega16", (64*2)],
-                  (0x93, 0x07): ["ATmega8", (32*2)],
-                  (0x93, 0x0A): ["ATmega88", (32*2)],
-                  (0x94, 0x06): ["ATmega168", (64*2)],
-                  (0x95, 0x0F): ["ATmega328P", (64*2)],
-                  (0x95, 0x14): ["ATmega328", (64*2)],
-                  (0x94, 0x04): ["ATmega162", (64*2)],
-                  (0x94, 0x02): ["ATmega163", (64*2)],
-                  (0x94, 0x05): ["ATmega169", (64*2)],
-                  (0x93, 0x06): ["ATmega8515", (32*2)],
-                  (0x93, 0x08): ["ATmega8535", (32*2)]}
+AVR_ATMEL_CPUS = {(0x97, 0x03): ["ATmega1280", (128*2), 512],
+                  (0x97, 0x04): ["ATmega1281", (128*2), 512],
+                  (0x97, 0x03): ["ATmega128", (128*2), 512],
+                  (0x97, 0x02): ["ATmega64", (128*2), 256],
+                  (0x95, 0x02): ["ATmega32", (64*2), 256],
+                  (0x94, 0x03): ["ATmega16", (64*2), 128],
+                  (0x93, 0x07): ["ATmega8", (32*2), 128],
+                  (0x93, 0x0A): ["ATmega88", (32*2), 128],
+                  (0x94, 0x06): ["ATmega168", (64*2), 256],
+                  (0x95, 0x0F): ["ATmega328P", (64*2), 256],
+                  (0x95, 0x14): ["ATmega328", (64*2), 256],
+                  (0x94, 0x04): ["ATmega162", (64*2), 128],
+                  (0x94, 0x02): ["ATmega163", (64*2), 128],
+                  (0x94, 0x05): ["ATmega169", (64*2), 128],
+                  (0x93, 0x06): ["ATmega8515", (32*2), 128],
+                  (0x93, 0x08): ["ATmega8535", (32*2), 128]}
 
 
 class ArduinoBootloader(object):
@@ -50,6 +50,7 @@ class ArduinoBootloader(object):
         self._answer = None
         self._cpu_name = ""
         self._cpu_page_size = 0
+        self._cpu_pages = 0
 
     @property
     def hw_version(self):
@@ -66,6 +67,10 @@ class ArduinoBootloader(object):
     @property
     def cpu_page_size(self):
         return self._cpu_page_size
+
+    @property
+    def cpu_pages(self):
+        return self._cpu_pages
 
     def find_device_port(self):
         ports = serial.tools.list_ports.comports()
@@ -143,10 +148,12 @@ class ArduinoBootloader(object):
                     list_cpu = AVR_ATMEL_CPUS[(self._answer[2], self._answer[3])]
                     self._cpu_name = list_cpu[0]
                     self._cpu_page_size = list_cpu[1]
+                    self._cpu_pages = list_cpu[2]
                     return True
                 except KeyError:
                     self._cpu_name = "SIG2: {:02x} SIG3: {:02x}".format(self._answer[2], self._answer[3])
                     self._cpu_page_size = 0
+                    self._cpu_pages = 0
         return False
 
     def cmd_request(self, msg, answer_len):
