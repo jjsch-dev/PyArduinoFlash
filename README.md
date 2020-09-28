@@ -34,9 +34,13 @@ Documentation and Examples
     if ab.open():
         if ab.board_request():
             print("botloader version: {} hardware version: {}".format(ab.sw_version, ab.hw_version))
-        
+            ab.close()
+            return 
+
         if ab.cpu_signature():
             print("cpu name: {}".format(self.ab.cpu_name) )
+            ab.close()
+            return
 
         ih.fromfile("firmware_file.hex", format='hex')
         
