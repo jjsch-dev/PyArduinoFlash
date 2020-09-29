@@ -39,18 +39,24 @@ else:
 ih = IntelHex()
 ab = ArduinoBootloader()
 
+
+def exit_by_error(msg):
+    print("error, {}".format(msg))
+    ab.leave_prg_mode()
+    ab.close()
+    sys.exit(0)
+
+
 if ab.open(speed=args.baudrate):
     print("AVR device initialized and ready to accept instructions")
     address = 0
     if not ab.board_request():
-        ab.close()
-        sys.exit(0)
+        exit_by_error(msg="board request")
 
     print("bootloader version: {} hardware version: {}".format(ab.sw_version, ab.hw_version))
 
     if not ab.cpu_signature():
-        ab.close()
-        sys.exit(0)
+        exit_by_error(msg="cpu signature")
 
     print("cpu name: {}".format(ab.cpu_name))
 
@@ -60,13 +66,9 @@ if ab.open(speed=args.baudrate):
         try:
             ih.fromfile(args.filename, format='hex')
         except FileNotFoundError:
-            print("error, file not found")
-            ab.close()
-            sys.exit()
+            exit_by_error(msg="file not found")
         except (AddressOverlapError, HexRecordError):
-            print("error, file format")
-            ab.close()
-            sys.exit()
+            exit_by_error(msg="error, file format")
 
         print("writing flash: {} bytes".format(ih.maxaddr()))
         bar = progressbar.ProgressBar(max_value=ih.maxaddr(), prefix="writing ")
@@ -74,10 +76,7 @@ if ab.open(speed=args.baudrate):
         for address in range(0, ih.maxaddr(), ab.cpu_page_size):
             buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
             if not ab.write_memory(buffer, address):
-                print("error, writing flash memory")
-                ab.leave_prg_mode()
-                ab.close()
-                sys.exit(0)
+                exit_by_error(msg="writing flash memory")
 
             bar.update(address)
 
@@ -101,15 +100,11 @@ if ab.open(speed=args.baudrate):
     for address in range(0, max_address, ab.cpu_page_size):
         read_buffer = ab.read_memory(address, ab.cpu_page_size)
         if read_buffer is None:
-            print("error, reading flash memory")
-            ab.close()
-            sys.exit()
+            exit_by_error(msg="reading flash memory")
 
         if args.update:
             if read_buffer != ih.tobinarray(start=address, size=ab.cpu_page_size):
-                print("file not match")
-                ab.close()
-                sys.exit()
+                exit_by_error(msg="file not match")
         elif args.read:
             for i in range(0, ab.cpu_page_size):
                 dict_hex[address + i] = read_buffer[i]
@@ -125,10 +120,7 @@ if ab.open(speed=args.baudrate):
         try:
             ih.tofile(args.filename, 'hex')
         except FileNotFoundError:
-            print("error, the file cannot be created")
-            ab.leave_prg_mode()
-            ab.close()
-            sys.exit()
+            exit_by_error(msg="the file cannot be created")
 
     print("\nflash done, thank you")
 
