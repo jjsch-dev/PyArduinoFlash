@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-'''Arduino flash memory utility.'''
+"""Arduino flash memory utility.
+   It is used to write / verify and read the flash memory of an Arduino board.
+   The input / output file format is Intel Hexadecimal."""
 
 VERSION = '0.1.0'
 
@@ -10,6 +12,7 @@ import sys
 sys.path.append('../')
 
 from intelhex import IntelHex
+from intelhex import AddressOverlapError, HexRecordError
 from arduinobootloader import ArduinoBootloader
 import progressbar
 
@@ -25,9 +28,9 @@ if args.version:
     print("version {}".format(VERSION))
 
 if args.update:
-    print("Update Arduino firmware with filename: {}".format(args.filename))
+    print("update Arduino firmware with filename: {}".format(args.filename))
 elif args.read:
-    print("Save the Arduino firmware in filename: {}".format(args.filename))
+    print("save the Arduino firmware in filename: {}".format(args.filename))
 else:
     parser.print_help()
     sys.exit()
@@ -37,6 +40,7 @@ ab = ArduinoBootloader()
 
 if ab.open():
     print("AVR device initialized and ready to accept instructions")
+    address = 0
     if not ab.board_request():
         ab.close()
         sys.exit(0)
@@ -51,14 +55,25 @@ if ab.open():
 
     if args.update:
         print("reading input file: {}".format(args.filename))
-        ih.fromfile(args.filename, format='hex')
+
+        try:
+            ih.fromfile(args.filename, format='hex')
+        except FileNotFoundError:
+            print("error, file not found")
+            ab.close()
+            sys.exit()
+        except (AddressOverlapError, HexRecordError):
+            print("error, file format")
+            ab.close()
+            sys.exit()
+
         print("writing flash: {} bytes".format(ih.maxaddr()))
         bar = progressbar.ProgressBar(max_value=ih.maxaddr(), prefix="writing ")
         bar.start()
         for address in range(0, ih.maxaddr(), ab.cpu_page_size):
             buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
             if not ab.write_memory(buffer, address):
-                print("write error")
+                print("error, writing flash memory")
                 ab.leave_prg_mode()
                 ab.close()
                 sys.exit(0)
@@ -68,13 +83,16 @@ if ab.open():
         bar.update(address)
         bar.finish()
 
+    dict_hex = dict()
+
     if args.update:
         max_address = ih.maxaddr()
         print("reading and verifying flash memory")
     elif args.read:
         max_address = int(ab.cpu_page_size * ab.cpu_pages)
-        dict_hex = dict()
         print("reading flash memory")
+    else:
+        max_address = 0
 
     bar = progressbar.ProgressBar(max_value=max_address, prefix="reading ").start()
     bar.start()
@@ -82,7 +100,7 @@ if ab.open():
     for address in range(0, max_address, ab.cpu_page_size):
         read_buffer = ab.read_memory(address, ab.cpu_page_size)
         if read_buffer is None:
-            print("read error")
+            print("error, reading flash memory")
             ab.close()
             sys.exit()
 
@@ -97,17 +115,23 @@ if ab.open():
 
         bar.update(address)
 
+    bar.update(address)
+    bar.finish()
+
     if args.read:
         dict_hex["start_addr"] = 0
         ih.fromdict(dict_hex)
-        ih.tofile(args.filename, 'hex')
-
-    bar.update(address)
-    bar.finish()
+        try:
+            ih.tofile(args.filename, 'hex')
+        except FileNotFoundError:
+            print("error, the file cannot be created")
+            ab.leave_prg_mode()
+            ab.close()
+            sys.exit()
 
     print("\nflash done, thank you")
 
     ab.leave_prg_mode()
     ab.close()
 else:
-    print("Error, can't connect to the arduino board")
+    print("error, could not connect with arduino board")
