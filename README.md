@@ -85,6 +85,38 @@ The bootloader begins the execution of the firmware after a period of time witho
 
 Finally, to release the serial port, you have to execute the function ``ab.close()``.
 
+Scripts
+-------
+In the Script folder is the arduinoflash.py file that allows you to update or read the firmware of an Arduino board.
+
+One of the purposes is to show the use of the PyArduinoBootloader library in conjunction with the [IntelHex](https://github.com/python-intelhex/intelhex) library to process hexadecimal files.
+
+To read the command line (file and options) use the [argparse](https://docs.python.org/3/library/argparse.html#module-argparse) library.
+
+To indicate the progress the [progressbar2](https://pypi.org/project/progressbar2/) library.
+
+```shell script: usage: arduinoflash.py [-h] [--version] [-r | -u] filename
+usage: arduinoflash.py [-h] [--version] [-r | -u] filename
+
+arduino flash utility
+
+positional arguments:
+  filename      filename in hexadecimal Intel format
+
+optional arguments:
+  -h, --help    show this help message and exit
+  --version     script version
+  -r, --read    read the cpu flash memory
+  -u, --update  update cpu flash memory
+```
+The following capture shows the reading of the flash memory of an Arduino Nano board.
+
+![](images/arduinoflash_read.gif)
+
+The following screenshot shows the firmware update of an Arduino Nano board.
+
+![](images/arduinoflash_update.gif)
+
 Support
 -------
 
