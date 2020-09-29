@@ -80,19 +80,17 @@ if ab.open():
     bar.start()
 
     for address in range(0, max_address, ab.cpu_page_size):
-        if args.update:
-            buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
-
         read_buffer = ab.read_memory(address, ab.cpu_page_size)
         if read_buffer is None:
             print("read error")
             ab.close()
             sys.exit()
 
-        if args.update and buffer != read_buffer:
-            print("file not match")
-            ab.close()
-            sys.exit()
+        if args.update:
+            if read_buffer != ih.tobinarray(start=address, size=ab.cpu_page_size):
+                print("file not match")
+                ab.close()
+                sys.exit()
         elif args.read:
             for i in range(0, ab.cpu_page_size):
                 dict_hex[address + i] = read_buffer[i]
