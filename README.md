@@ -12,7 +12,7 @@ It implements a subset of Atmel's STK-500 protocol, using as reference the sourc
 
 As an example of use, there is an APP in [KivyMd](https://gitlab.com/kivymd/KivyMD) and [Kivy](http://kivy.org) that exposes through a GUI all the methods required to update and verify the firmware.
 
-![alt text](images/app_main.png)
+![](images/arduino_kivy.gif)
 
 Installation
 ------------
@@ -87,13 +87,13 @@ Finally, to release the serial port, you have to execute the function ``ab.close
 
 Scripts
 -------
-In the Script folder is the arduinoflash.py file that allows you to update or read the firmware of an Arduino board.
+The Script folder contains arduinoflash.py file that allows update or read the firmware of Arduino boards.
 
 One of the purposes is to show the use of the PyArduinoBootloader library in conjunction with the [IntelHex](https://github.com/python-intelhex/intelhex) library to process hexadecimal files.
 
-To read the command line (file and options) use the [argparse](https://docs.python.org/3/library/argparse.html#module-argparse) library.
+Use the [argparse](https://docs.python.org/3/library/argparse.html#module-argparse) library, to read the command line (file and options). 
 
-To indicate the progress the [progressbar2](https://pypi.org/project/progressbar2/) library.
+And to indicate the progress the [progressbar2](https://pypi.org/project/progressbar2/) library.
 
 ```shell script: usage: arduinoflash.py [-h] [--version] [-r | -u] filename
 usage: arduinoflash.py [-h] [--version] [-r | -u] filename
@@ -113,7 +113,7 @@ The following capture shows the reading of the flash memory of an Arduino Nano b
 
 ![](images/arduinoflash_read.gif)
 
-The following screenshot shows the firmware update of an Arduino Nano board.
+And the next shows the firmware update of an Arduino Nano board.
 
 ![](images/arduinoflash_update.gif)
 
