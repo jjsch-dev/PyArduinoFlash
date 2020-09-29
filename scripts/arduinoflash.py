@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description="arduino flash utility")
 group = parser.add_mutually_exclusive_group()
 parser.add_argument("filename", help="filename in hexadecimal Intel format")
 parser.add_argument("--version", action="store_true", help="script version")
+parser.add_argument("-b", "--baudrate", type=int, required=True, help="old bootolader (57600) Optiboot (115200)")
 group.add_argument("-r", "--read", action="store_true", help="read the cpu flash memory")
 group.add_argument("-u", "--update", action="store_true", help="update cpu flash memory")
 args = parser.parse_args()
@@ -38,7 +39,7 @@ else:
 ih = IntelHex()
 ab = ArduinoBootloader()
 
-if ab.open():
+if ab.open(speed=args.baudrate):
     print("AVR device initialized and ready to accept instructions")
     address = 0
     if not ab.board_request():
@@ -134,4 +135,4 @@ if ab.open():
     ab.leave_prg_mode()
     ab.close()
 else:
-    print("error, could not connect with arduino board")
+    print("error, could not connect with arduino board - baudrate: {}".format(args.baudrate))
