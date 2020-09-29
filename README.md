@@ -106,8 +106,11 @@ positional arguments:
 optional arguments:
   -h, --help    show this help message and exit
   --version     script version
-  -r, --read    read the cpu flash memory
-  -u, --update  update cpu flash memory
+  -b BAUDRATE, --baudrate BAUDRATE
+                        old bootolader (57600) Optiboot (115200)
+  -r, --read            read the cpu flash memory
+  -u, --update          update cpu flash memory
+
 ```
 The following capture shows the reading of the flash memory of an Arduino Nano board.
 
