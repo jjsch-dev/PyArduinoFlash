@@ -24,7 +24,7 @@ Documentation and Examples
 ----------------------------------------
 ```python
     from intelhex import IntelHex
-    from arduinobootloader import ArduinoBootloader
+    from arduinobootloader.arduinobootloader import ArduinoBootloader
 
     ih = IntelHex()
     ab = ArduinoBootloader()

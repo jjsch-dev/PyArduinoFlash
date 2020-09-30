@@ -13,7 +13,7 @@ sys.path.append('../')
 
 from intelhex import IntelHex
 from intelhex import AddressOverlapError, HexRecordError
-from arduinobootloader import ArduinoBootloader
+from arduinobootloader.arduinobootloader import ArduinoBootloader
 import progressbar
 
 parser = argparse.ArgumentParser(description="arduino flash utility")

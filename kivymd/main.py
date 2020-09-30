@@ -1,7 +1,6 @@
 '''
 Application in Kivy to show the operation of updating the firmware of an Arduino board in python.
 '''
-import intelhex
 from kivy.lang import Builder
 from kivy.clock import Clock
 from kivymd.app import MDApp
@@ -11,7 +10,7 @@ from queue import Queue
 
 from intelhex import IntelHex
 from intelhex import AddressOverlapError
-from arduinobootloader import ArduinoBootloader
+from arduinobootloader.arduinobootloader import ArduinoBootloader
 
 
 KV = '''
