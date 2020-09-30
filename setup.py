@@ -10,7 +10,7 @@ with open(path.join(DIR, 'requirements.txt')) as f:
 
 setup(
     name='arduinobootloader',
-    version='0.0.4',
+    version='0.0.5',
     package_dir={'': 'arduinobootloader'},
     py_modules=['arduinobootloader'],
     url='https://github.com/jjsch-dev/PyArduinoFlash',
