@@ -9,11 +9,9 @@ VERSION = '0.1.0'
 import argparse
 import sys
 
-sys.path.append('../')
-
 from intelhex import IntelHex
 from intelhex import AddressOverlapError, HexRecordError
-from arduinobootloader.arduinobootloader import ArduinoBootloader
+from arduinobootloader import ArduinoBootloader
 import progressbar
 
 parser = argparse.ArgumentParser(description="arduino flash utility")

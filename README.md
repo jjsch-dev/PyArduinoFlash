@@ -16,9 +16,9 @@ As an example of use, there is an APP in [KivyMd](https://gitlab.com/kivymd/Kivy
 
 Installation
 ------------
-Installation, Documentation and Examples
-----------------------------------------
-For now it consists of copying the [arduinobotloader.py](https://github.com/jjsch-dev/PyArduinoFlash/blob/master/arduinobootloader.py) file to the Python project
+Install using pip or pip3 (recommended, no separate download required):
+
+``pip install arduinobootloader`` 
 
 Documentation and Examples
 ----------------------------------------
