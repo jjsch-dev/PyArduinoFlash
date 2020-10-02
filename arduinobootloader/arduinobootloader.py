@@ -14,10 +14,6 @@ import time
 RESP_STK_OK = 0x10
 RESP_STK_IN_SYNC = 0x14
 
-""" The manufacturer byte is always the same (Atmel).
-"""
-SIG1_ATMEL = 0x1E
-
 """ The dictionary key is made up of SIG2 and SIG3
     The value is a list with the name of the CPU the page size in byte 
     and the flash pages.
@@ -51,6 +47,8 @@ TOKEN = 0x0E
 CMD_SIGN_ON = 0x01
 CMD_GET_PARAMETER = 0x03
 CMD_SPI_MULTI = 0x1D
+CMD_LOAD_ADDRESS = 0x06
+CMD_PROGRAM_FLASH_ISP = 0x13
 
 """Options for get parameter"""
 OPT_HW_VERSION = b'\x90'
@@ -352,6 +350,33 @@ class ArduinoBootloader(object):
             signature |= self._answer[3]
 
             return self._ab._is_cpu_signature(signature)
+
+        def write_memory(self, buffer, address, flash=True):
+            """Write the buffer to the requested address of the flash memory or eeprom."""
+
+            if self._load_address(address, flash):
+                buff_len = len(buffer)
+
+                msg = bytearray(9)
+                msg[0] = ((buff_len >> 8) & 0xFF)
+                msg[1] = (buff_len & 0xFF)
+                msg.extend(buffer)
+
+                if self._send_command(CMD_PROGRAM_FLASH_ISP, msg):
+                    return self._recv_answer(CMD_PROGRAM_FLASH_ISP)
+            return False
+
+        def _load_address(self, address, flash):
+            msg = bytearray(4)
+            msg[0] = (((address >> 24) & 0xFF) | 0x80)
+            msg[1] = ((address >> 16) & 0xFF)
+            msg[2] = ((address >> 8) & 0xFF)
+            msg[3] = (address & 0xFF)
+
+            if self._send_command(CMD_LOAD_ADDRESS, msg):
+                return self._recv_answer(CMD_LOAD_ADDRESS)
+
+            return False
 
         def _get_signature(self, index):
             msg = bytearray(6)
