@@ -43,6 +43,12 @@ AVR_ATMEL_CPUS = {(0x97, 0x03): ["ATmega1280", (128*2), 512],
 MESSAGE_START = 0x1B        # = ESC = 27 decimal
 TOKEN = 0x0E
 CMD_SIGN_ON = 0x01
+CMD_GET_PARAMETER = 0x03
+
+"""Options for get parameter"""
+OPT_HW_VERSION = b'\x90'
+OPT_SW_MAJOR = b'\x91'
+OPT_SW_MINOR = b'\x92'
 
 class ArduinoBootloader(object):
     def __init__(self, *args, **kwargs):
@@ -264,6 +270,8 @@ class ArduinoBootloader(object):
             return False
 
     class Stk500v2(object):
+        """It encapsulates the communication protocol that Arduino uses in bootloaders
+        with more than 128K bytes of flash memory. For example: Mega 2560 etc"""
         def __init__(self, ab):
             self._ab = ab
             self._answer = None
@@ -283,6 +291,7 @@ class ArduinoBootloader(object):
             self._ab.close()
 
         def get_sync(self):
+            """send the sync command and see if we can get there"""
             if self._send_command(CMD_SIGN_ON):
                 if self._recv_answer(CMD_SIGN_ON):
                     prog_name_len = self._answer[0]
@@ -292,13 +301,39 @@ class ArduinoBootloader(object):
                     return True
             return False
 
+        def board_request(self):
+            """Get the firmware and hardware version of the bootloader."""
+
+            if not self._get_params(OPT_HW_VERSION):
+                return False
+
+            self._ab._hw_version = self._answer[0]
+
+            if not self._get_params(OPT_SW_MAJOR):
+                return False
+
+            self._ab._hw_version = self._answer[0]
+
+            if not self._get_params(OPT_SW_MINOR):
+                return False
+
+            self._ab._sw_minor = self._answer[0]
+
+            return True
+
+        def _get_params(self, option):
+            if self._send_command(CMD_GET_PARAMETER, option):
+                return self._recv_answer(CMD_GET_PARAMETER)
+            return False
+
         def _send_command(self, cmd, data=None):
+            """The command is composed of a fixed header of 5 bytes plus the data with the checksum."""
             if self._ab.device:
                 self._sequence_number += 1
 
                 buff = bytearray(5)
                 checksum = 0
-                data_len = 1 if data is None else len(dat) + 1
+                data_len = 1 if data is None else len(data) + 1
 
                 buff[0] = MESSAGE_START
                 buff[1] = self._sequence_number
@@ -342,7 +377,7 @@ class ArduinoBootloader(object):
                         checksum = 0
                         for val in head:
                             checksum ^= val
-                        """answer now contains the bytes of the data."""
+                        """discards the command and status from the response."""
                         del self._answer[0]
                         del self._answer[0]
 
