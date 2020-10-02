@@ -19,6 +19,7 @@ group = parser.add_mutually_exclusive_group()
 parser.add_argument("filename", help="filename in hexadecimal Intel format")
 parser.add_argument("--version", action="store_true", help="script version")
 parser.add_argument("-b", "--baudrate", type=int, required=True, help="old bootolader (57600) Optiboot (115200)")
+parser.add_argument("-p", "--programmer", required=True, help="programmer version - Nano (Stk500v1) Mega (Stk500v2)")
 group.add_argument("-r", "--read", action="store_true", help="read the cpu flash memory")
 group.add_argument("-u", "--update", action="store_true", help="update cpu flash memory")
 args = parser.parse_args()
@@ -37,7 +38,10 @@ else:
 ih = IntelHex()
 ab = ArduinoBootloader()
 
-prg = ab.sel_programmer("Stk500v1")
+prg = ab.sel_programmer(args.programmer)
+if prg is None:
+    print("programmer version unsupported: {}".format(args.programmer))
+    sys.exit()
 
 
 def exit_by_error(msg):
