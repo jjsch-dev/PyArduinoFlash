@@ -37,23 +37,25 @@ else:
 ih = IntelHex()
 ab = ArduinoBootloader()
 
+prg = ab.sel_programmer("Stk500v1")
+
 
 def exit_by_error(msg):
     print("error, {}".format(msg))
-    ab.leave_prg_mode()
+    prg.leave_prg_mode()
     ab.close()
     sys.exit(0)
 
 
-if ab.open(speed=args.baudrate):
+if prg.open(speed=args.baudrate):
     print("AVR device initialized and ready to accept instructions")
     address = 0
-    if not ab.board_request():
+    if not prg.board_request():
         exit_by_error(msg="board request")
 
     print("bootloader version: {} hardware version: {}".format(ab.sw_version, ab.hw_version))
 
-    if not ab.cpu_signature():
+    if not prg.cpu_signature():
         exit_by_error(msg="cpu signature")
 
     print("cpu name: {}".format(ab.cpu_name))
@@ -73,7 +75,7 @@ if ab.open(speed=args.baudrate):
         bar.start()
         for address in range(0, ih.maxaddr(), ab.cpu_page_size):
             buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
-            if not ab.write_memory(buffer, address):
+            if not prg.write_memory(buffer, address):
                 exit_by_error(msg="writing flash memory")
 
             bar.update(address)
@@ -96,7 +98,7 @@ if ab.open(speed=args.baudrate):
     bar.start()
 
     for address in range(0, max_address, ab.cpu_page_size):
-        read_buffer = ab.read_memory(address, ab.cpu_page_size)
+        read_buffer = prg.read_memory(address, ab.cpu_page_size)
         if read_buffer is None:
             exit_by_error(msg="reading flash memory")
 
@@ -122,7 +124,7 @@ if ab.open(speed=args.baudrate):
 
     print("\nflash done, thank you")
 
-    ab.leave_prg_mode()
-    ab.close()
+    prg.leave_prg_mode()
+    prg.close()
 else:
     print("error, could not connect with arduino board - baudrate: {}".format(args.baudrate))
