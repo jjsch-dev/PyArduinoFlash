@@ -22,33 +22,45 @@ SIG1_ATMEL = 0x1E
     The value is a list with the name of the CPU the page size in byte 
     and the flash pages.
 """
-AVR_ATMEL_CPUS = {(0x97, 0x03): ["ATmega1280", (128*2), 512],
-                  (0x97, 0x04): ["ATmega1281", (128*2), 512],
-                  (0x97, 0x03): ["ATmega128", (128*2), 512],
-                  (0x97, 0x02): ["ATmega64", (128*2), 256],
-                  (0x95, 0x02): ["ATmega32", (64*2), 256],
-                  (0x94, 0x03): ["ATmega16", (64*2), 128],
-                  (0x93, 0x07): ["ATmega8", (32*2), 128],
-                  (0x93, 0x0A): ["ATmega88", (32*2), 128],
-                  (0x94, 0x06): ["ATmega168", (64*2), 256],
-                  (0x95, 0x0F): ["ATmega328P", (64*2), 256],
-                  (0x95, 0x14): ["ATmega328", (64*2), 256],
-                  (0x94, 0x04): ["ATmega162", (64*2), 128],
-                  (0x94, 0x02): ["ATmega163", (64*2), 128],
-                  (0x94, 0x05): ["ATmega169", (64*2), 128],
-                  (0x93, 0x06): ["ATmega8515", (32*2), 128],
-                  (0x93, 0x08): ["ATmega8535", (32*2), 128]}
+AVR_ATMEL_CPUS = {0x1E9608: ["ATmega640", (128*2), 1024],
+                  0x1E9802: ["ATmega2561", (128*2), 1024],
+                  0x1E9801: ["ATmega2560", (128*2), 1024],
+                  0x1E9703: ["ATmega1280", (128*2), 512],
+                  0x1E9705: ["ATmega1284P", (128*2), 512],
+                  0x1E9704: ["ATmega1281", (128*2), 512],
+                  0x1E9782: ["AT90USB1287", (128 * 2), 512],
+                  0x1E9702: ["ATmega128", (128*2), 512],
+                  0x1E9602: ["ATmega64", (128*2), 256],
+                  0x1E9502: ["ATmega32", (64*2), 256],
+                  0x1E9403: ["ATmega16", (64*2), 128],
+                  0x1E9307: ["ATmega8", (32 * 2), 128],
+                  0x1E930A: ["ATmega88", (32*2), 128],
+                  0x1E9406: ["ATmega168", (64*2), 256],
+                  0x1E950F: ["ATmega328P", (64*2), 256],
+                  0x1E9514: ["ATmega328", (64*2), 256],
+                  0x1E9404: ["ATmega162", (64*2), 128],
+                  0x1E9402: ["ATmega163", (64*2), 128],
+                  0x1E9405: ["ATmega169", (64*2), 128],
+                  0x1E9306: ["ATmega8515", (32*2), 128],
+                  0x1E9308: ["ATmega8535", (32*2), 128]}
+
 
 """STK message constants for Stk500v2"""
 MESSAGE_START = 0x1B        # = ESC = 27 decimal
 TOKEN = 0x0E
 CMD_SIGN_ON = 0x01
 CMD_GET_PARAMETER = 0x03
+CMD_SPI_MULTI = 0x1D
 
 """Options for get parameter"""
 OPT_HW_VERSION = b'\x90'
 OPT_SW_MAJOR = b'\x91'
 OPT_SW_MINOR = b'\x92'
+
+"""Index for CPU signatures"""
+CPU_SIG1 = 0
+CPU_SIG2 = 1
+CPU_SIG3 = 2
 
 class ArduinoBootloader(object):
     def __init__(self, *args, **kwargs):
@@ -92,6 +104,19 @@ class ArduinoBootloader(object):
             self._programmer = None
 
         return self._programmer
+
+    def _is_cpu_signature(self, signature):
+        try:
+            list_cpu = AVR_ATMEL_CPUS[signature]
+            self._cpu_name = list_cpu[0]
+            self._cpu_page_size = list_cpu[1]
+            self._cpu_pages = list_cpu[2]
+            return True
+        except KeyError:
+            self._cpu_name = "SIG2: {:02x} SIG3: {:02x}".format(self._answer[2], self._answer[3])
+            self._cpu_page_size = 0
+            self._cpu_pages = 0
+            return False
 
     def _find_device_port(self):
         ports = serial.tools.list_ports.comports()
@@ -191,17 +216,7 @@ class ArduinoBootloader(object):
         def cpu_signature(self):
             """Get information about the CPU, name and size of the flash memory page"""
             if self._cmd_request(b"u ", answer_len=5):
-                if self._answer[1] == SIG1_ATMEL:
-                    try:
-                        list_cpu = AVR_ATMEL_CPUS[(self._answer[2], self._answer[3])]
-                        self._ab._cpu_name = list_cpu[0]
-                        self._ab._cpu_page_size = list_cpu[1]
-                        self._ab._cpu_pages = list_cpu[2]
-                        return True
-                    except KeyError:
-                        self._ab._cpu_name = "SIG2: {:02x} SIG3: {:02x}".format(self._answer[2], self._answer[3])
-                        self._ab._cpu_page_size = 0
-                        self._ab._cpu_pages = 0
+                return self._ab._is_cpu_signature((self._answer[1] << 16) | (self._answer[2] << 8) | self._answer[3])
             return False
 
         def write_memory(self, buffer, address, flash=True):
@@ -320,6 +335,33 @@ class ArduinoBootloader(object):
             self._ab._sw_minor = self._answer[0]
 
             return True
+
+        def cpu_signature(self):
+            signature = 0
+            """Get information about the CPU, name and size of the flash memory page"""
+            if not self._get_signature(CPU_SIG1):
+                return False
+            signature = (self._answer[3] << 16)
+
+            if not self._get_signature(CPU_SIG2):
+                return False
+            signature |= (self._answer[3] << 8)
+
+            if not self._get_signature(CPU_SIG3):
+                return False
+            signature |= self._answer[3]
+
+            return self._ab._is_cpu_signature(signature)
+
+        def _get_signature(self, index):
+            msg = bytearray(6)
+            msg[3] = ord('0') # Get signature
+            msg[5] = index
+
+            if self._send_command(CMD_SPI_MULTI, msg):
+                return self._recv_answer(CMD_SPI_MULTI)
+
+            return False
 
         def _get_params(self, option):
             if self._send_command(CMD_GET_PARAMETER, option):
