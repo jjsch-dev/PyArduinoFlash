@@ -9,7 +9,8 @@ The intention is to have a class that can be imported into any python project to
 
 It implements a subset of Atmel's STK-500V1 and STK500V2 protocol, using as reference the protocols implemented by [Avrdude](http://savannah.nongnu.org/projects/avrdude) in the ```arduino.c``` and ```wiring.c``` modules.
 
-For Arduino's using Atmel AVR8 processors there are three versions of the bootoloader available. For the Uno, Nano, etc that are marked in the Arduino IDE as older you have to use STK500-V1 at 57600 baud, and for the new ones (they implement the Optiboot bootloader) you have to use STK500-V1 at 115200 baud
+For Arduino's using Atmel AVR8 processors there are three versions of the bootoloader available. For boards that have less than 128 Kbytes of Flash memory, for example Nano or Uno using the Atmega328P, etc that are marked in the Arduino IDE as older you have to use STK500-V1 at 57600 baud. And for the new ones (they implement the Optiboot bootloader) you have to use STK500-V1 at 115200 baud. 
+For boards that have processors of more than 128 Kbytes, for example the Mega 2560, STK500-V2 must be used at 115200 baud.
 
 
 As an example of use, there is an APP in [KivyMd](https://gitlab.com/kivymd/KivyMD) and [Kivy](http://kivy.org) that exposes through a GUI all the methods required to update and verify the firmware.
