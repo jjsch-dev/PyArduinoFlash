@@ -248,7 +248,7 @@ class ArduinoBootloader(object):
         def write_memory(self, buffer, address, flash=True):
             """Write the buffer to the requested address of the flash memory or eeprom."""
 
-            if self.set_address(address, flash):
+            if self._set_address(address, flash):
                 buff_len = len(buffer)
 
                 cmd = bytearray(4)
@@ -266,7 +266,7 @@ class ArduinoBootloader(object):
         def read_memory(self, address, count, flash=True):
             """Read flash or eeprom memory from requested address."""
 
-            if self.set_address(address, flash):
+            if self._set_address(address, flash):
                 cmd = bytearray(5)
                 cmd[0] = ord('t')
                 cmd[1] = ((count >> 8) & 0xFF)
@@ -281,7 +281,7 @@ class ArduinoBootloader(object):
                     return buffer
             return None
 
-        def set_address(self, address, flash):
+        def _set_address(self, address, flash):
             """The address flash are in words, and the eeprom in bytes."""
             if flash:
                 address = int(address / 2)
@@ -449,7 +449,7 @@ class ArduinoBootloader(object):
                 return self._recv_answer(CMD_GET_PARAMETER)
             return False
 
-        def inc_sequence_numb(self):
+        def _inc_sequence_numb(self):
             """Controls the overflow of the sequence number (8 bits)"""
             self._sequence_number += 1
             if self._sequence_number > 0xFF:
@@ -458,7 +458,7 @@ class ArduinoBootloader(object):
         def _send_command(self, cmd, data=None):
             """The command have two parts: a fixed header of 5 bytes, and the data with the checksum."""
             if self._ab.device:
-                self.inc_sequence_numb()
+                self._inc_sequence_numb()
 
                 buff = bytearray(5)
                 checksum = 0
