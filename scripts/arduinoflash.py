@@ -30,7 +30,7 @@ if args.version:
 if args.update:
     print("update Arduino firmware with filename: {}".format(args.filename))
 elif args.read:
-    print("save the Arduino firmware in filename: {}".format(args.filename))
+    print("read the Arduino firmware and save in filename: {}".format(args.filename))
 else:
     parser.print_help()
     sys.exit()
@@ -45,7 +45,7 @@ if prg is None:
 
 
 def exit_by_error(msg):
-    print("error, {}".format(msg))
+    print("\nerror, {}".format(msg))
     prg.leave_prg_mode()
     ab.close()
     sys.exit(0)
@@ -76,7 +76,7 @@ if prg.open(speed=args.baudrate):
 
         print("writing flash: {} bytes".format(ih.maxaddr()))
         bar = progressbar.ProgressBar(max_value=ih.maxaddr(), prefix="writing ")
-        bar.start()
+        bar.start(init=True)
         for address in range(0, ih.maxaddr(), ab.cpu_page_size):
             buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
             if not prg.write_memory(buffer, address):
@@ -84,7 +84,6 @@ if prg.open(speed=args.baudrate):
 
             bar.update(address)
 
-        bar.update(address)
         bar.finish()
 
     dict_hex = dict()
@@ -98,8 +97,8 @@ if prg.open(speed=args.baudrate):
     else:
         max_address = 0
 
-    bar = progressbar.ProgressBar(max_value=max_address, prefix="reading ").start()
-    bar.start()
+    bar = progressbar.ProgressBar(max_value=max_address, prefix="reading ")
+    bar.start(init=True)
 
     for address in range(0, max_address, ab.cpu_page_size):
         read_buffer = prg.read_memory(address, ab.cpu_page_size)
@@ -115,7 +114,6 @@ if prg.open(speed=args.baudrate):
 
         bar.update(address)
 
-    bar.update(address)
     bar.finish()
 
     if args.read:

@@ -44,11 +44,16 @@ AVR_ATMEL_CPUS = {0x1E9608: ["ATmega640", (128*2), 1024],
 """STK message constants for Stk500v2"""
 MESSAGE_START = 0x1B        # = ESC = 27 decimal
 TOKEN = 0x0E
+
+STATUS_CMD_OK = 0x00
+
 CMD_SIGN_ON = 0x01
 CMD_GET_PARAMETER = 0x03
 CMD_SPI_MULTI = 0x1D
 CMD_LOAD_ADDRESS = 0x06
 CMD_PROGRAM_FLASH_ISP = 0x13
+CMD_READ_FLASH_ISP = 0x14
+CMD_LEAVE_PROGMODE_ISP = 0x11
 
 """Options for get parameter"""
 OPT_HW_VERSION = b'\x90'
@@ -142,6 +147,8 @@ class ArduinoBootloader(object):
             (for example in Arduino) '''
         self.device.dtr = True
         self.device.rts = True
+
+        # TODO: check because with 50mS V1 it doesn't work and V2 with 10.
         time.sleep(1 / 20)
 
         ''' Set DTR and RTS back to high '''
@@ -289,6 +296,7 @@ class ArduinoBootloader(object):
             self._ab = ab
             self._answer = None
             self._sequence_number = 0
+            self.head_cpy = 0
 
         def open(self, port=None, speed=115200):
             """Find and open the communication port where the Arduino is connected.
@@ -366,7 +374,34 @@ class ArduinoBootloader(object):
                     return self._recv_answer(CMD_PROGRAM_FLASH_ISP)
             return False
 
+        def read_memory(self, address, count, flash=True):
+            """Read flash memory or eeprom from requested address."""
+
+            if self._load_address(address, flash):
+                msg = bytearray(3)
+                msg[0] = ((count >> 8) & 0xFF)
+                msg[1] = (count & 0xFF)
+
+                if self._send_command(CMD_READ_FLASH_ISP, msg):
+                    if self._recv_answer(CMD_READ_FLASH_ISP):
+                        if self._answer[-1] == STATUS_CMD_OK:
+                            del self._answer[-1]
+                            return self._answer
+            return None
+
+        def leave_prg_mode(self):
+            """Tells the bootloader to leave programming mode and start executing the stored firmware"""
+            msg = bytearray(3)
+            if self._send_command(CMD_LEAVE_PROGMODE_ISP, msg):
+                return self._recv_answer(CMD_LEAVE_PROGMODE_ISP)
+
+            return False
+
         def _load_address(self, address, flash):
+            """The bootloader address flash is in words, and the eeprom in bytes."""
+            if flash:
+                address = int(address / 2)
+
             msg = bytearray(4)
             msg[0] = (((address >> 24) & 0xFF) | 0x80)
             msg[1] = ((address >> 16) & 0xFF)
@@ -375,7 +410,6 @@ class ArduinoBootloader(object):
 
             if self._send_command(CMD_LOAD_ADDRESS, msg):
                 return self._recv_answer(CMD_LOAD_ADDRESS)
-
             return False
 
         def _get_signature(self, index):
@@ -385,7 +419,6 @@ class ArduinoBootloader(object):
 
             if self._send_command(CMD_SPI_MULTI, msg):
                 return self._recv_answer(CMD_SPI_MULTI)
-
             return False
 
         def _get_params(self, option):
@@ -393,10 +426,15 @@ class ArduinoBootloader(object):
                 return self._recv_answer(CMD_GET_PARAMETER)
             return False
 
+        def inc_sequence_numb(self):
+            self._sequence_number += 1
+            if self._sequence_number > 0xFF:
+                self._sequence_number = 0
+
         def _send_command(self, cmd, data=None):
             """The command is composed of a fixed header of 5 bytes plus the data with the checksum."""
             if self._ab.device:
-                self._sequence_number += 1
+                self.inc_sequence_numb()
 
                 buff = bytearray(5)
                 checksum = 0
@@ -424,7 +462,6 @@ class ArduinoBootloader(object):
             """the response is composed of a fixed size header, and the first two
             bytes of the data contain the command and the status of the operation."""
             head = bytearray(self._ab.device.read(5))
-
             """For the header to be valid, the beginning and end, plus the sequence number, must match."""
             if len(head) == 5 and head[0] == MESSAGE_START and\
                 head[4] == TOKEN and self._sequence_number == head[1]:
@@ -436,11 +473,12 @@ class ArduinoBootloader(object):
                 if len_data >= 3:
                     self._answer = bytearray(self._ab.device.read(len_data))
                     if len(self._answer) == len_data and\
-                        self._answer[0] == cmd and self._answer[1] == 0:
+                        self._answer[0] == cmd and self._answer[1] == STATUS_CMD_OK:
                         answ_chk = self._answer[-1]
                         del self._answer[-1]
 
                         head.extend(self._answer)
+                        self.head_cpy = head
                         checksum = 0
                         for val in head:
                             checksum ^= val
