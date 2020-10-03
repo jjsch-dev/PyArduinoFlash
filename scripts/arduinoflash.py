@@ -4,7 +4,7 @@
    It is used to write / verify and read the flash memory of an Arduino board.
    The input / output file format is Intel Hexadecimal."""
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 
 import argparse
 import sys
@@ -47,7 +47,7 @@ if prg is None:
 def exit_by_error(msg):
     print("\nerror, {}".format(msg))
     prg.leave_bootloader()
-    ab.close()
+    prg.close()
     sys.exit(0)
 
 
