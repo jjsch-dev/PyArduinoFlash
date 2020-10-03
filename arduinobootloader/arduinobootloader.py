@@ -12,6 +12,7 @@ import serial
 import serial.tools.list_ports
 import time
 
+"""Constants for the Stk500v1 protocol"""
 RESP_STK_OK = 0x10
 RESP_STK_IN_SYNC = 0x14
 
@@ -45,9 +46,9 @@ AVR_ATMEL_CPUS = {0x1E9608: ["ATmega640", (128*2), 1024],
 """STK message constants for Stk500v2"""
 MESSAGE_START = 0x1B        # = ESC = 27 decimal
 TOKEN = 0x0E
-
 STATUS_CMD_OK = 0x00
 
+"""Supported Commands for the Stk500v2 Protocol"""
 CMD_SIGN_ON = 0x01
 CMD_GET_PARAMETER = 0x03
 CMD_SPI_MULTI = 0x1D
