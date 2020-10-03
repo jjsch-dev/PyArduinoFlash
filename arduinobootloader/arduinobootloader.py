@@ -15,7 +15,7 @@ import time
 RESP_STK_OK = 0x10
 RESP_STK_IN_SYNC = 0x14
 
-""" The dictionary key is made up of SIG3, SIG2 and SIG3
+""" The dictionary key is made up of SIG1, SIG2 and SIG3
     The value is a list with the name of the CPU the page size in byte 
     and the flash pages.
 """
@@ -140,7 +140,7 @@ class ArduinoBootloader(object):
             self._cpu_pages = list_cpu[2]
             return True
         except KeyError:
-            self._cpu_name = "SIG2: {:02x} SIG3: {:02x}".format(self._answer[2], self._answer[3])
+            self._cpu_name = "signature: {:06x}".format(signature)
             self._cpu_page_size = 0
             self._cpu_pages = 0
             return False
