@@ -57,7 +57,8 @@ if prg.open(speed=args.baudrate):
     if not prg.board_request():
         exit_by_error(msg="board request")
 
-    print("bootloader version: {} hardware version: {}".format(ab.sw_version, ab.hw_version))
+    print("bootloader: {} version: {} hardware version: {}".format(ab.programmer_name,\
+                                                                   ab.sw_version, ab.hw_version))
 
     if not prg.cpu_signature():
         exit_by_error(msg="cpu signature")

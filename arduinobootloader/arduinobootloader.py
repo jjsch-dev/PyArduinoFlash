@@ -1,10 +1,11 @@
 '''
-It is Python Class for updating the firmware of Arduino boards that use
-the ATmegaBOOT_168.c bootloader.
-For example Arduino Nano.
+Is Python Class for updating the firmware of Arduino boards that use
+Atmel AVR CPUs.
+For example Arduino Nano, Uno, Mega.
 
-The project implements the essential parts that Avrdude uses for the
-STK500 protocol for Arduino.
+The module implements the essential parts that Avrdude uses for the
+arduino and wiring protocols. In turn, they are a subset of the
+STK500 V1 and V2 protocols respectively.
 '''
 
 import serial
@@ -14,7 +15,7 @@ import time
 RESP_STK_OK = 0x10
 RESP_STK_IN_SYNC = 0x14
 
-""" The dictionary key is made up of SIG2 and SIG3
+""" The dictionary key is made up of SIG3, SIG2 and SIG3
     The value is a list with the name of the CPU the page size in byte 
     and the flash pages.
 """
@@ -98,6 +99,10 @@ class ArduinoBootloader(object):
     def cpu_pages(self):
         return self._cpu_pages
 
+    @property
+    def programmer_name(self):
+        return self._programmer_name
+
     def sel_programmer(self, type):
         if type == "Stk500v1":
             self._programmer = self.Stk500v1(self)
@@ -148,7 +153,7 @@ class ArduinoBootloader(object):
         self.device.dtr = True
         self.device.rts = True
 
-        # TODO: check because with 50mS V1 it doesn't work and V2 with 10.
+        # TODO: check the reason why with 50mS in V1 and with 10mS in V2 it doesn't work.
         time.sleep(1 / 20)
 
         ''' Set DTR and RTS back to high '''
