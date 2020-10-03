@@ -85,7 +85,7 @@ As the library needs the information of the CPU to know the size of the page, it
 
 If the previous functions were executed successfully (they return ``True``), now you have to open the hexadecimal file with the ``ih.fromfile("firmware_file.hex", format='hex')`` function. If there are errors in the format or the file path is invalid, exceptions are thrown.
 
-As the CPU is flashed by pages, with the function ``ih.tobinarray(start=address, size=ab.cpu_page_size)`` the current page is obtained (according to the address).
+To obtain the page that corresponds to the current address, use the  ``ih.tobinarray(start=address, size=ab.cpu_page_size)`` .
 
 For the bootloader to write it, use the function ``prg.write_memory(buffer, address)`` which take the buffer and the current address as parameters. Returns ``True`` when completed successfully.
 
