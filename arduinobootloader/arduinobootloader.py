@@ -266,7 +266,7 @@ class ArduinoBootloader(object):
             return None
 
         def set_address(self, address, flash):
-            """The bootloader address flash is in words, and the eeprom in bytes."""
+            """The address flash are in words, and the eeprom in bytes."""
             if flash:
                 address = int(address / 2)
 
@@ -374,7 +374,7 @@ class ArduinoBootloader(object):
                 msg[0] = ((buff_len >> 8) & 0xFF)
                 msg[1] = (buff_len & 0xFF)
                 msg.extend(buffer)
-
+                """The seven bytes preceding the data are not used."""
                 if self._send_command(CMD_PROGRAM_FLASH_ISP, msg):
                     return self._recv_answer(CMD_PROGRAM_FLASH_ISP)
             return False
@@ -386,9 +386,10 @@ class ArduinoBootloader(object):
                 msg = bytearray(3)
                 msg[0] = ((count >> 8) & 0xFF)
                 msg[1] = (count & 0xFF)
-
+                """TThe third byte is not used"""
                 if self._send_command(CMD_READ_FLASH_ISP, msg):
                     if self._recv_answer(CMD_READ_FLASH_ISP):
+                        """The end of data is marked with STATUS_OK"""
                         if self._answer[-1] == STATUS_CMD_OK:
                             del self._answer[-1]
                             return self._answer
@@ -403,7 +404,7 @@ class ArduinoBootloader(object):
             return False
 
         def _load_address(self, address, flash):
-            """The bootloader address flash is in words, and the eeprom in bytes."""
+            """The address flash are in words, and the eeprom in bytes."""
             if flash:
                 address = int(address / 2)
 
@@ -418,6 +419,7 @@ class ArduinoBootloader(object):
             return False
 
         def _get_signature(self, index):
+            """Implement a subcommand of CMD_SPI_MULTI to get the processor signature."""
             msg = bytearray(6)
             msg[3] = ord('0') # Get signature
             msg[5] = index
@@ -427,11 +429,13 @@ class ArduinoBootloader(object):
             return False
 
         def _get_params(self, option):
+            """Bootloader information"""
             if self._send_command(CMD_GET_PARAMETER, option):
                 return self._recv_answer(CMD_GET_PARAMETER)
             return False
 
         def inc_sequence_numb(self):
+            """Controls the overflow of the sequence number (8 bits)"""
             self._sequence_number += 1
             if self._sequence_number > 0xFF:
                 self._sequence_number = 0
