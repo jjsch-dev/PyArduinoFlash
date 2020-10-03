@@ -121,11 +121,16 @@ class ArduinoBootloader(object):
     def programmer_name(self):
         return self._programmer_name
 
-    def select_programmer(self, type):
-        """Select the communication protocol to connect with the Arduino bootloader."""
-        if type == "Stk500v1":
+    def select_programmer(self, protocol):
+        """Select the communication protocol to connect with the Arduino bootloader.
+
+        :param protocol: arduino bootloader can be: Stk500v1 or Stk500v2
+        :type protocol: str
+        :return: None for unknow protocol
+        """
+        if protocol == "Stk500v1":
             self._programmer = self.Stk500v1(self)
-        elif type == "Stk500v2":
+        elif protocol == "Stk500v2":
             self._programmer = self.Stk500v2(self)
         else:
             self._programmer = None
@@ -133,7 +138,13 @@ class ArduinoBootloader(object):
         return self._programmer
 
     def _is_cpu_signature(self, signature):
-        """See if the signature corresponds to any of the Atmel CPUs that use the Arduino boards."""
+        """Look for the CPU signature in the list of Arduino boards.
+
+        :param signature: Atmel cpu 24 bits identificator
+        :type signature: int
+        :return: True the signature is on the supported CPU list.
+        :rtype: bool
+        """
         try:
             list_cpu = AVR_ATMEL_CPUS[signature]
             self._cpu_name = list_cpu[0]
@@ -147,6 +158,12 @@ class ArduinoBootloader(object):
             return False
 
     def _find_device_port(self):
+        """Look in the list of serial ports, one that corresponds to CH340 or XXX
+        that Arduino boards typically use.
+
+        :return: True when success.
+        :rtype: bool
+        """
         ports = serial.tools.list_ports.comports()
         for port in ports:
             if ("VID:PID=1A86:7523" in port.hwid) or ("VID:PID=2341:0043" in port.hwid):
@@ -157,6 +174,13 @@ class ArduinoBootloader(object):
         """ Find and open the communication port where the Arduino is connected.
         Generate the reset sequence with the DTR / RTS pins.
         Send the sync command to verify that there is a valid bootloader.
+
+        :param port: When it is different from None, it suspends the automatic search of the board.
+        :type port: str
+        :param speed: comunication baurate.
+        :type speed: int
+        :return: True when the conection was stablished and the board answer to the commands.
+        :rtype: bool
         """
         if not port:
             port = self._find_device_port()
@@ -199,8 +223,16 @@ class ArduinoBootloader(object):
 
         def open(self, port=None, speed=57600):
             """Find and open the communication port where the Arduino is connected.
-               Generate the reset sequence with the DTR / RTS pins.
-               Send the sync command to verify that there is a valid bootloader."""
+            Generate the reset sequence with the DTR / RTS pins.
+            Send the sync command to verify that there is a valid bootloader.
+
+            :param port: When it is different from None, it suspends the automatic search of the board.
+            :type port: str
+            :param speed: comunication baurate, for older bootloader use 57600.
+            :type speed: int
+            :return: True when the conection was stablished and the board answer to the commands.
+            :rtype: bool
+            """
             if self._ab.open(port, speed):
                 return self.get_sync()
 
@@ -213,6 +245,9 @@ class ArduinoBootloader(object):
         def get_sync(self):
             """Send the sync command whose function is to discard the reception buffers of both serial units.
               The first time you send the sync command to get rid of the line noise with a 500mS timeout.
+
+            :return: True when success.
+            :rtype: bool
             """
             self._ab.device.timeout = 1 / 2
             for i in range(1, 5):
@@ -222,7 +257,11 @@ class ArduinoBootloader(object):
             return False
 
         def board_request(self):
-            """Get the firmware and hardware version of the bootloader."""
+            """Get the firmware and hardware version of the bootloader.
+
+            :return: True when success.
+            :rtype: bool
+            """
             if not self._cmd_request(b"A\x80 ", answer_len=3):
                 return False
 
@@ -253,13 +292,27 @@ class ArduinoBootloader(object):
             return True
 
         def cpu_signature(self):
-            """Get CPU information: name, size and count of the flash memory pages"""
+            """Get CPU information: name, size and count of the flash memory pages
+
+            :return: True when success.
+            :rtype: bool
+            """
             if self._cmd_request(b"u ", answer_len=5):
                 return self._ab._is_cpu_signature((self._answer[1] << 16) | (self._answer[2] << 8) | self._answer[3])
             return False
 
         def write_memory(self, buffer, address, flash=True):
-            """Write the buffer to the requested address of the flash memory or eeprom."""
+            """Write the buffer to the requested address of memory.
+
+            :param buffer: data to write.
+            :type buffer: bytearray
+            :param address: address in memory of the first byte (16 bits).
+            :type address: int
+            :param flash: for old bootloader version can be flash or eeprom.
+            :type flash: bool
+            :return: True the buffer was successfully written.
+            :rtype: bool
+            """
 
             if self._set_address(address, flash):
                 buff_len = len(buffer)
@@ -277,7 +330,17 @@ class ArduinoBootloader(object):
             return False
 
         def read_memory(self, address, count, flash=True):
-            """Read flash or eeprom memory from requested address."""
+            """Read the memory from requested address.
+
+            :param address: address in memory of the first byte (16 bits).
+            :type address: int
+            :param count: bytes to read.
+            :type count: int
+            :param flash: eeprom supported only by the older version of bootloader .
+            :type flash: bool
+            :return: the buffer read or None when there is error.
+            :rtype: bytearray
+            """
 
             if self._set_address(address, flash):
                 cmd = bytearray(5)
@@ -295,7 +358,14 @@ class ArduinoBootloader(object):
             return None
 
         def _set_address(self, address, flash):
-            """The address flash are in words, and the eeprom in bytes."""
+            """The address flash are in words, and the eeprom in bytes.
+
+            :param address: address in memory of the first byte (16 bits).
+            :type address: int
+            :type flash: bool
+            :return: True when success.
+            :rtype: bool
+            """
             if flash:
                 address = int(address / 2)
 
@@ -309,11 +379,23 @@ class ArduinoBootloader(object):
             return self._cmd_request(cmd, answer_len=2)
 
         def leave_bootloader(self):
-            """Tells the bootloader to leave programming mode and start executing the stored firmware"""
+            """Tells the bootloader to leave programming mode and start executing the stored firmware
+
+            :return: True when success.
+            :rtype: bool
+            """
             return self._cmd_request(b"Q ", answer_len=2)
 
         def _cmd_request_no_len(self, msg, answer_len):
-            """Send and receive a command in stk500v1 format", but don't check the answer len"""
+            """Send and receive a command in stk500v1 format", but don't check the answer len
+
+            :param msg: command to send.
+            :type msg: bytearray
+            :param answer_len: bytescount of the response.
+            :type answer_len: int
+            :return: True when success.
+            :rtype: bool
+            """
             if self._ab.device:
                 self._ab.device.write(msg)
                 self._answer = self._ab.device.read(answer_len)
@@ -327,7 +409,15 @@ class ArduinoBootloader(object):
 
         def _cmd_request(self, msg, answer_len):
             """Send and receive a command in stk500v1 format
-            verifies that the response size matches what is expected."""
+            verifies that the response size matches what is expected.
+
+            :param msg: command to send.
+            :type msg: bytearray
+            :param answer_len: bytescount of the response.
+            :type answer_len: int
+            :return: True when success.
+            :rtype: bool
+            """
             if self._cmd_request_no_len(msg, answer_len):
                 return len(self._answer) == answer_len
 
@@ -343,8 +433,16 @@ class ArduinoBootloader(object):
 
         def open(self, port=None, speed=115200):
             """Find and open the communication port where the Arduino is connected.
-               Generate the reset sequence with the DTR / RTS pins.
-               Send the sync command to verify that there is a valid bootloader."""
+            Generate the reset sequence with the DTR / RTS pins.
+            Send the sync command to verify that there is a valid bootloader.
+
+            :param port: When it is different from None, it suspends the automatic search of the board.
+            :type port: str
+            :param speed: comunication baurate.
+            :type speed: int
+            :return: True when the conection was stablished and the board answer to the commands.
+            :rtype: bool
+            """
             if self._ab.open(port, speed):
                 return self.get_sync()
 
@@ -355,7 +453,11 @@ class ArduinoBootloader(object):
             self._ab.close()
 
         def get_sync(self):
-            """Send the sync command"""
+            """Send the sync command
+
+            :return: True when success.
+            :rtype: bool
+            """
             if self._send_command(CMD_SIGN_ON):
                 if self._recv_answer(CMD_SIGN_ON):
                     prog_name_len = self._answer[0]
@@ -366,7 +468,11 @@ class ArduinoBootloader(object):
             return False
 
         def board_request(self):
-            """Get the firmware and hardware version of the bootloader."""
+            """Get the firmware and hardware version of the bootloader.
+
+            :return: True when success.
+            :rtype: bool
+            """
 
             if not self._get_params(OPT_HW_VERSION):
                 return False
@@ -386,7 +492,11 @@ class ArduinoBootloader(object):
             return True
 
         def cpu_signature(self):
-            """Get CPU information: name, size and count of the flash memory pages"""
+            """Get CPU information: name, size and count of the flash memory pages
+
+            :return: True when success.
+            :rtype: bool
+            """
             signature = 0
             if not self._get_signature(CPU_SIG1):
                 return False
@@ -403,7 +513,17 @@ class ArduinoBootloader(object):
             return self._ab._is_cpu_signature(signature)
 
         def write_memory(self, buffer, address, flash=True):
-            """Write the buffer to the requested address of the flash memory or eeprom."""
+            """Write the buffer to the requested address of memory.
+
+            :param buffer: data to write.
+            :type buffer: bytearray
+            :param address: address in memory of the first byte (32 bits).
+            :type address: int
+            :param flash: stk500v2 version only supports flash.
+            :type flash: bool
+            :return: True the buffer was successfully written.
+            :rtype: bool
+            """
 
             if self._load_address(address, flash):
                 buff_len = len(buffer)
@@ -418,7 +538,17 @@ class ArduinoBootloader(object):
             return False
 
         def read_memory(self, address, count, flash=True):
-            """Read flash or eeprom memory from requested address."""
+            """Read the memory from requested address.
+
+            :param address: address in memory of the first byte (32 bits).
+            :type address: int
+            :param count: bytes to read.
+            :type count: int
+            :param flash: stk500v2 version only supports flash.
+            :type flash: bool
+            :return: the buffer read or None when there is error.
+            :rtype: bytearray
+            """
 
             if self._load_address(address, flash):
                 msg = bytearray(3)
@@ -434,7 +564,11 @@ class ArduinoBootloader(object):
             return None
 
         def leave_bootloader(self):
-            """Tells the bootloader to leave programming mode and start executing the stored firmware"""
+            """Tells the bootloader to leave programming mode and start executing the stored firmware
+
+            :return: True when success.
+            :rtype: bool
+            """
             msg = bytearray(3)
             if self._send_command(CMD_LEAVE_PROGMODE_ISP, msg):
                 return self._recv_answer(CMD_LEAVE_PROGMODE_ISP)
@@ -442,7 +576,15 @@ class ArduinoBootloader(object):
             return False
 
         def _load_address(self, address, flash):
-            """The address flash are in words, and the eeprom in bytes."""
+            """The address flash are in words, and the eeprom in bytes.
+
+            :param address: memory address of the first byte:
+            :type address: int
+            :param flash: stk500v2 version only supports flash.
+            :type flash: bool
+            :return: True when success.
+            :rtype: bool
+            """
             if flash:
                 address = int(address / 2)
 
@@ -457,7 +599,13 @@ class ArduinoBootloader(object):
             return False
 
         def _get_signature(self, index):
-            """Implement a subcommand of CMD_SPI_MULTI to get the processor signature."""
+            """Implement a subcommand of CMD_SPI_MULTI to get the processor signature.
+
+            :param index: index of the signature byte.
+            :type index: int
+            :return: True when success.
+            :rtype: bool
+            """
             msg = bytearray(6)
             msg[3] = ord('0') # Get signature
             msg[5] = index
@@ -467,7 +615,13 @@ class ArduinoBootloader(object):
             return False
 
         def _get_params(self, option):
-            """Bootloader information"""
+            """Bootloader information
+
+            :param option: option identificator.
+            :type index: int
+            :return: True when success.
+            :rtype: bool
+            """
             if self._send_command(CMD_GET_PARAMETER, option):
                 return self._recv_answer(CMD_GET_PARAMETER)
             return False
@@ -479,7 +633,15 @@ class ArduinoBootloader(object):
                 self._sequence_number = 0
 
         def _send_command(self, cmd, data=None):
-            """The command have two parts: a fixed header of 5 bytes, and the data with the checksum."""
+            """The command have two parts: a fixed header of 5 bytes, and the data with the checksum.
+
+            :param cmd: supported command.
+            :type index: int
+            :param data: if it is not None, it is added to the data buffer.
+            :type data: bytearray
+            :return: True when success.
+            :rtype: bool
+            """
             if self._ab.device:
                 self._inc_sequence_numb()
 
@@ -507,7 +669,13 @@ class ArduinoBootloader(object):
 
         def _recv_answer(self, cmd):
             """The response have a fixed size header that inform the data len, and the
-            first two bytes of the data contain the command and the operation status."""
+            first two bytes of the data contain the command and the operation status.
+
+            :param cmd: command to which the response belongs.
+            :type index: int
+            :return: True when success.
+            :rtype: bool
+            """
             head = self._read_headear()
             if not head is None:
                 """Add one because the length does not include the checksum byte"""
@@ -535,7 +703,11 @@ class ArduinoBootloader(object):
             return False
 
         def _read_headear(self):
-            """Wait for the reception of the beginning of frame byte"""
+            """Wait for the reception of the beginning of frame byte
+
+            :return: None when timeout, and the header when success.
+            :rtype: bytearray
+            """
             for i in range(1, 10):
                 """The header is valid, when the trailing byte sequence number and token match."""
                 start = self._ab.device.read(1)
