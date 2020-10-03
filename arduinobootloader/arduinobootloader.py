@@ -238,6 +238,18 @@ class ArduinoBootloader(object):
 
             self._ab._sw_minor = self._answer[1]
 
+            """As the Optiboot does not implement the STK_GET_SIGN_ON command and it always 
+            returns 0x14 0x10, the function send command without checking the length of the 
+            response is used."""
+            if not self._cmd_request_no_len(b"1 ", answer_len=7):
+                return False
+
+            """The name of the programmer is between the beginning and end of the frame."""
+            name = bytearray(self._answer)
+            del name[-1]
+            del name[0]
+            self._ab._programmer_name = name.decode("utf-8")
+
             return True
 
         def cpu_signature(self):
@@ -300,15 +312,25 @@ class ArduinoBootloader(object):
             """Tells the bootloader to leave programming mode and start executing the stored firmware"""
             return self._cmd_request(b"Q ", answer_len=2)
 
-        def _cmd_request(self, msg, answer_len):
-            """Send and receive a command in stk500v1 format"""
+        def _cmd_request_no_len(self, msg, answer_len):
+            """Send and receive a command in stk500v1 format", but don't check the answer len"""
             if self._ab.device:
                 self._ab.device.write(msg)
                 self._answer = self._ab.device.read(answer_len)
 
-                if len(self._answer) == answer_len and \
-                        self._answer[0] == RESP_STK_IN_SYNC and self._answer[answer_len - 1] == RESP_STK_OK:
+                """If the answer has at least two characters, check that the first and last 
+                corresponds to the start and end sentinel."""
+                if len(self._answer) >= 2 and \
+                        self._answer[0] == RESP_STK_IN_SYNC and self._answer[-1] == RESP_STK_OK:
                     return True
+            return False
+
+        def _cmd_request(self, msg, answer_len):
+            """Send and receive a command in stk500v1 format
+            verifies that the response size matches what is expected."""
+            if self._cmd_request_no_len(msg, answer_len):
+                return len(self._answer) == answer_len
+
             return False
 
     class Stk500v2(object):
