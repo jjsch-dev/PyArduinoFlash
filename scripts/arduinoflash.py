@@ -38,7 +38,7 @@ else:
 ih = IntelHex()
 ab = ArduinoBootloader()
 
-prg = ab.sel_programmer(args.programmer)
+prg = ab.select_programmer(args.programmer)
 if prg is None:
     print("programmer version unsupported: {}".format(args.programmer))
     sys.exit()
@@ -46,7 +46,7 @@ if prg is None:
 
 def exit_by_error(msg):
     print("\nerror, {}".format(msg))
-    prg.leave_prg_mode()
+    prg.leave_bootloader()
     ab.close()
     sys.exit(0)
 
@@ -127,7 +127,7 @@ if prg.open(speed=args.baudrate):
 
     print("\nflash done, thank you")
 
-    prg.leave_prg_mode()
+    prg.leave_bootloader()
     prg.close()
 else:
     print("error, could not connect with arduino board - baudrate: {}".format(args.baudrate))
