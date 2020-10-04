@@ -16,9 +16,10 @@ import time
 RESP_STK_OK = 0x10
 RESP_STK_IN_SYNC = 0x14
 
-""" The dictionary key is made up of SIG1, SIG2 and SIG3
-    The value is a list with the name of the CPU the page size in byte 
-    and the flash pages.
+""" 
+The dictionary key is made up of SIG1, SIG2 and SIG3
+The value is a list with the name of the CPU the page size in byte 
+and the flash pages.
 """
 AVR_ATMEL_CPUS = {0x1E9608: ["ATmega640", (128*2), 1024],
                   0x1E9802: ["ATmega2561", (128*2), 1024],
@@ -99,26 +100,51 @@ class ArduinoBootloader(object):
 
     @property
     def hw_version(self):
+        """bootloader hardware version
+        :return: version
+        :rtype: int
+        """
         return str(self._hw_version)
 
     @property
     def sw_version(self):
+        """botloader sotware version
+        :return: version
+        :rtype: str
+        """
         return "{}.{}".format(self._sw_major, self._sw_minor)
 
     @property
     def cpu_name(self):
+        """Dictionary cpu name
+        :return: name
+        :rtype: str
+        """
         return self._cpu_name
 
     @property
     def cpu_page_size(self):
+        """CPU flash page size in bytes, not words.
+        :return: size
+        :rtype: int
+        """
         return self._cpu_page_size
 
     @property
     def cpu_pages(self):
+        """CPU flash pages
+        :return pages
+        :rtype: int
+        """
         return self._cpu_pages
 
     @property
     def programmer_name(self):
+        """Name given by Atmel to its programmers, for example (ISP_V2).
+        Optiboot returns an empty string to decrease the footprint of the bootloader.
+        :return: name
+        :rtype: str
+        """
         return self._programmer_name
 
     def select_programmer(self, protocol):
@@ -127,6 +153,7 @@ class ArduinoBootloader(object):
         :param protocol: arduino bootloader can be: Stk500v1 or Stk500v2
         :type protocol: str
         :return: None for unknow protocol
+        :rtype: object
         """
         if protocol == "Stk500v1":
             self._programmer = self.Stk500v1(self)
@@ -175,11 +202,11 @@ class ArduinoBootloader(object):
         Generate the reset sequence with the DTR / RTS pins.
         Send the sync command to verify that there is a valid bootloader.
 
-        :param port: When it is different from None, it suspends the automatic search of the board.
+        :param port: serial port identifier (example: ttyUSB0 or COM1). None for automatic board search.
         :type port: str
         :param speed: comunication baurate.
         :type speed: int
-        :return: True when the conection was stablished and the board answer to the commands.
+        :return: True when the serial port was opened and the connection to the board was established.
         :rtype: bool
         """
         if not port:
@@ -226,11 +253,11 @@ class ArduinoBootloader(object):
             Generate the reset sequence with the DTR / RTS pins.
             Send the sync command to verify that there is a valid bootloader.
 
-            :param port: When it is different from None, it suspends the automatic search of the board.
+            :param port: serial port identifier (example: ttyUSB0 or COM1). None for automatic board search.
             :type port: str
             :param speed: comunication baurate, for older bootloader use 57600.
             :type speed: int
-            :return: True when the conection was stablished and the board answer to the commands.
+            :return: True when the serial port was opened and the connection to the board was established.
             :rtype: bool
             """
             if self._ab.open(port, speed):
@@ -332,11 +359,11 @@ class ArduinoBootloader(object):
         def read_memory(self, address, count, flash=True):
             """Read the memory from requested address.
 
-            :param address: address in memory of the first byte (16 bits).
+            :param address: memory address of the first byte to read. (16 bits).
             :type address: int
             :param count: bytes to read.
             :type count: int
-            :param flash: eeprom supported only by the older version of bootloader .
+            :param flash: eeprom supported only by the older version of bootloader.
             :type flash: bool
             :return: the buffer read or None when there is error.
             :rtype: bytearray
@@ -436,11 +463,11 @@ class ArduinoBootloader(object):
             Generate the reset sequence with the DTR / RTS pins.
             Send the sync command to verify that there is a valid bootloader.
 
-            :param port: When it is different from None, it suspends the automatic search of the board.
+            :param port: serial port identifier (example: ttyUSB0 or COM1). None for automatic board search.
             :type port: str
-            :param speed: comunication baurate.
+            :param speed: comunication baurate (115200).
             :type speed: int
-            :return: True when the conection was stablished and the board answer to the commands.
+            :return: True when the serial port was opened and the connection to the board was established.
             :rtype: bool
             """
             if self._ab.open(port, speed):
@@ -540,7 +567,7 @@ class ArduinoBootloader(object):
         def read_memory(self, address, count, flash=True):
             """Read the memory from requested address.
 
-            :param address: address in memory of the first byte (32 bits).
+            :param address: memory address of the first byte to read. (32 bits).
             :type address: int
             :param count: bytes to read.
             :type count: int
