@@ -1,5 +1,8 @@
-Source Code Example
+Usage Example
 ==========================================
+
+.. note::
+   For UNO and Nano use "Stk500v1", for Mega 2560 "Stk500v2".
 
 .. code-block:: python
 
@@ -11,7 +14,7 @@ Source Code Example
         ab = ArduinoBootloader()
         prg = ab.select_programmer("Stk500v1")
 
-        if prg.open():
+        if prg.open(speed=115200):
             if not prg.board_request():
                 prg.close()
                 return
@@ -26,7 +29,10 @@ Source Code Example
 
             print("cpu name: {}".format(ab.cpu_name) )
 
-            ih.fromfile("firmware_file.hex", format='hex')
+            try:
+                ih.fromfile("filename.hex", format='hex')
+            except (FileNotFoundError, AddressOverlapError, HexRecordError):
+                return
 
             for address in range(0, ih.maxaddr(), ab.cpu_page_size):
                 buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
@@ -39,7 +45,7 @@ Source Code Example
             for address in range(0, ih.maxaddr(), ab.cpu_page_size):
                 buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
                 read_buffer = prg.read_memory(address, ab.cpu_page_size)
-                if not len(read_buffer):
+                if read_buffer is None:
                    print("Read error")
                    break
 

@@ -290,7 +290,7 @@ class ArduinoBootloader(object):
 
         def get_sync(self):
             """Send the sync command whose function is to discard the reception buffers of both serial units.
-            The first time you send the sync command to get rid of the line noise with a 500mS timeout.
+            Set the receive unit timeout to 500mS and send the sync command up to 5 times to eliminate noise from the line.
 
             :return: True when success.
             :rtype: bool
@@ -352,7 +352,7 @@ class ArduinoBootloader(object):
 
             :param buffer: data to write.
             :type buffer: bytearray
-            :param address: address in memory of the first byte (16 bits).
+            :param address: memory address of the first byte (16 bits).
             :type address: int
             :param flash: for old bootloader version can be flash or eeprom.
             :type flash: bool
@@ -423,7 +423,7 @@ class ArduinoBootloader(object):
             return self._cmd_request(cmd, answer_len=2)
 
         def leave_bootloader(self):
-            """Tells the bootloader to leave programming mode and start executing the stored firmware
+            """Leave programming mode and start executing the stored firmware
 
             :return: True when success.
             :rtype: bool
@@ -560,7 +560,7 @@ class ArduinoBootloader(object):
 
             :param buffer: data to write.
             :type buffer: bytearray
-            :param address: address in memory of the first byte (32 bits).
+            :param address: memory address of the first byte (32 bits).
             :type address: int
             :param flash: stk500v2 version only supports flash.
             :type flash: bool
@@ -605,7 +605,7 @@ class ArduinoBootloader(object):
             return None
 
         def leave_bootloader(self):
-            """Tells the bootloader to leave programming mode and start executing the stored firmware
+            """Leave programming mode and start executing the stored firmware
 
             :return: True when success.
             :rtype: bool

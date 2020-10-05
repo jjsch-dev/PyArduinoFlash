@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../arduinobootloader/'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'PyArduinoFlash'
+project = 'ArduinoBootloader'
 copyright = '2020, jjsch-dev'
 author = 'jjsch-dev'
 

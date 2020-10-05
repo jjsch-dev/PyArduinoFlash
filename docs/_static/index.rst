@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to PyArduinoFlash's documentation!
+Welcome to ArduinoBootloader's documentation!
 ==========================================
 
 .. toctree::
@@ -11,6 +11,7 @@ Welcome to PyArduinoFlash's documentation!
    :caption: Contents:
 
    description
+   install
    usage
    examples
    kivy_app
