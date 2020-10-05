@@ -1,7 +1,7 @@
 '''
 Is a Python Class for updating the firmware of Arduino boards that use
 Atmel AVR CPUs.
-For example Arduino Nano, Uno, Mega.
+For example Arduino Nano, Uno, Mega and more.
 
 The module implements the essential parts that Avrdude uses for the
 arduino and wiring protocols. In turn, they are a subset of the
@@ -12,15 +12,13 @@ import serial
 import serial.tools.list_ports
 import time
 
-"""Constants for the Stk500v1 protocol"""
-RESP_STK_OK = 0x10
-RESP_STK_IN_SYNC = 0x14
 
-""" 
-The dictionary key is made up of SIG1, SIG2 and SIG3
-The value is a list with the name of the CPU the page size in byte 
-and the flash pages.
-"""
+RESP_STK_OK = 0x10
+"""End message of the Stk500v1"""
+
+RESP_STK_IN_SYNC = 0x14
+"""Start message of the Stk500v1"""
+
 AVR_ATMEL_CPUS = {0x1E9608: ["ATmega640", (128*2), 1024],
                   0x1E9802: ["ATmega2561", (128*2), 1024],
                   0x1E9801: ["ATmega2560", (128*2), 1024],
@@ -43,48 +41,63 @@ AVR_ATMEL_CPUS = {0x1E9608: ["ATmega640", (128*2), 1024],
                   0x1E9306: ["ATmega8515", (32*2), 128],
                   0x1E9308: ["ATmega8535", (32*2), 128]}
 
+""" 
+Dictionary with the list of Atmel AVR 8 CPUs used by Arduino boards. 
+Contains the size in bytes and the number of pages in flash memory. 
+The key is the processor signature which is made up of SIG1, SIG2 and SIG3.
+"""
 
-"""STK message constants for Stk500v2"""
-MESSAGE_START = 0x1B        # = ESC = 27 decimal
+MESSAGE_START = 0x1B
+"""Start message of the Stk500v2 header (ESC = 27 decimal)"""
+
 TOKEN = 0x0E
+"""End message of the Stk500v2 header (ESC = 27 decimal)"""
+
 STATUS_CMD_OK = 0x00
+"""The command was successful"""
 
-"""Supported Commands for the Stk500v2 Protocol"""
 CMD_SIGN_ON = 0x01
+"""Synchronize the communication of the Stk500v2 Protocol"""
+
 CMD_GET_PARAMETER = 0x03
+"""Bootloader information of the Stk500v2 Protocol"""
+
 CMD_SPI_MULTI = 0x1D
+"""Cpu information of the Stk500v2 Protocol"""
+
 CMD_LOAD_ADDRESS = 0x06
+"""Set the flash adddress of the Stk500v2 Protocol"""
+
 CMD_PROGRAM_FLASH_ISP = 0x13
+"""Write the flash of the Stk500v2 Protocol"""
+
 CMD_READ_FLASH_ISP = 0x14
+"""Read the flash of the Stk500v2 Protocol"""
+
 CMD_LEAVE_PROGMODE_ISP = 0x11
+"""Leave the programmer mode of the Stk500v2 Protocol"""
 
-"""Options for get parameter"""
 OPT_HW_VERSION = b'\x90'
-OPT_SW_MAJOR = b'\x91'
-OPT_SW_MINOR = b'\x92'
+"""Hardware version of the bootloader"""
 
-"""Index for CPU signatures"""
+OPT_SW_MAJOR = b'\x91'
+"""Major software bootloader version"""
+
+OPT_SW_MINOR = b'\x92'
+"""Minor software bootloader version"""
+
 CPU_SIG1 = 0
+"""Cpu signature part 1"""
+
 CPU_SIG2 = 1
+"""Cpu signature part 2"""
+
 CPU_SIG3 = 2
+"""Cpu signature part 3"""
 
 class ArduinoBootloader(object):
     """Contains the two inner classes that support the Stk500 V1 and V2 protocols
     for comunicate with arduino bootloaders.
-
-    Usage: ab = ArduinoBooloader()
-
-           # For Nano or Uno
-           ab.select_protocol("Stk500v1")
-           # For Mega 2560
-           ab.select_protocol("Stk500v2")
-
-           prg.open(speed=115200)
-           prg.board_request()
-           prg.cpu_signature()
-           prg.write_memory(data, ab._cpu_page_size)
-           prg.leave_bootloader()
-           prg.close
     """
     def __init__(self, *args, **kwargs):
         self.device = None
@@ -101,40 +114,45 @@ class ArduinoBootloader(object):
     @property
     def hw_version(self):
         """bootloader hardware version
-        :return: version
-        :rtype: int
+
+        :setter: version
+        :type: int
         """
         return str(self._hw_version)
 
     @property
     def sw_version(self):
         """botloader sotware version
-        :return: version
-        :rtype: str
+
+        :setter: version
+        :type: str
         """
         return "{}.{}".format(self._sw_major, self._sw_minor)
 
     @property
     def cpu_name(self):
         """Dictionary cpu name
-        :return: name
-        :rtype: str
+
+        :setter: name
+        :type: str
         """
         return self._cpu_name
 
     @property
     def cpu_page_size(self):
         """CPU flash page size in bytes, not words.
-        :return: size
-        :rtype: int
+
+        :setter: size
+        :type: int
         """
         return self._cpu_page_size
 
     @property
     def cpu_pages(self):
         """CPU flash pages
-        :return pages
-        :rtype: int
+
+        :setter: pages
+        :type: int
         """
         return self._cpu_pages
 
@@ -142,8 +160,9 @@ class ArduinoBootloader(object):
     def programmer_name(self):
         """Name given by Atmel to its programmers, for example (ISP_V2).
         Optiboot returns an empty string to decrease the footprint of the bootloader.
-        :return: name
-        :rtype: str
+
+        :setter: name
+        :type: str
         """
         return self._programmer_name
 
@@ -241,7 +260,7 @@ class ArduinoBootloader(object):
     class Stk500v1(object):
         """It encapsulates the communication protocol that Arduino uses for the first
            versions of bootoloader, which can write up to 128 K bytes of flash memory.
-           For example: Nano, Uno, etc
+           For example: Nano, Uno, etc.
            The older version (ATmegaBOOT_168.c) works at 57600 baudios,
            the new version (OptiBoot) at 115200"""
         def __init__(self, ab):
@@ -271,7 +290,7 @@ class ArduinoBootloader(object):
 
         def get_sync(self):
             """Send the sync command whose function is to discard the reception buffers of both serial units.
-              The first time you send the sync command to get rid of the line noise with a 500mS timeout.
+            The first time you send the sync command to get rid of the line noise with a 500mS timeout.
 
             :return: True when success.
             :rtype: bool
@@ -340,7 +359,6 @@ class ArduinoBootloader(object):
             :return: True the buffer was successfully written.
             :rtype: bool
             """
-
             if self._set_address(address, flash):
                 buff_len = len(buffer)
 
@@ -368,7 +386,6 @@ class ArduinoBootloader(object):
             :return: the buffer read or None when there is error.
             :rtype: bytearray
             """
-
             if self._set_address(address, flash):
                 cmd = bytearray(5)
                 cmd[0] = ord('t')
@@ -500,7 +517,6 @@ class ArduinoBootloader(object):
             :return: True when success.
             :rtype: bool
             """
-
             if not self._get_params(OPT_HW_VERSION):
                 return False
 
@@ -551,7 +567,6 @@ class ArduinoBootloader(object):
             :return: True the buffer was successfully written.
             :rtype: bool
             """
-
             if self._load_address(address, flash):
                 buff_len = len(buffer)
 
@@ -576,7 +591,6 @@ class ArduinoBootloader(object):
             :return: the buffer read or None when there is error.
             :rtype: bytearray
             """
-
             if self._load_address(address, flash):
                 msg = bytearray(3)
                 msg[0] = ((count >> 8) & 0xFF)
