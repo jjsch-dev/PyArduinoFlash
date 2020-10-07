@@ -7,9 +7,20 @@ The module implements the essential parts that Avrdude uses for the
 arduino and wiring protocols. In turn, they are a subset of the
 STK500 V1 and V2 protocols respectively.
 '''
+from os import environ
 
-import serial
-import serial.tools.list_ports
+# From Kivy source code: On Android sys.platform returns 'linux2',
+# so prefer to check the presence of python-for-android environment
+# variables (ANDROID_ARGUMENT or ANDROID_PRIVATE).
+OS_ANDROID = True if 'ANDROID_ARGUMENT' in environ else False
+
+if OS_ANDROID:
+    from usb4a import usb
+    from usbserial4a import serial4a
+else:
+    import serial
+    import serial.tools.list_ports
+
 import time
 
 
@@ -210,10 +221,15 @@ class ArduinoBootloader(object):
         :return: True when success.
         :rtype: bool
         """
-        ports = serial.tools.list_ports.comports()
-        for port in ports:
-            if ("VID:PID=1A86:7523" in port.hwid) or ("VID:PID=2341:0043" in port.hwid):
-                return port.device
+        if OS_ANDROID:
+            ports = usb.get_usb_device_list()
+            port = ports[0].getDeviceName()
+            return port
+        else:
+            ports = serial.tools.list_ports.comports()
+            for port in ports:
+                if ("VID:PID=1A86:7523" in port.hwid) or ("VID:PID=2341:0043" in port.hwid):
+                    return port.device
         return ""
 
     def open(self, port=None, speed=115200):
@@ -234,7 +250,17 @@ class ArduinoBootloader(object):
         if not port:
             return False
         else:
-            self.device = serial.Serial(port, speed, 8, 'N', 1, timeout=1)
+            if OS_ANDROID:
+                device = usb.get_usb_device(port)
+                if not usb.has_usb_permission(device):
+                    usb.request_usb_permission(device)
+                    return
+                self.device = serial4a.get_serial_port(port, speed, 8, 'N', 1, timeout=1)
+
+                if self.device:
+                    self.device.USB_READ_TIMEOUT_MILLIS = 1000
+            else:
+                self.device = serial.Serial(port, speed, 8, 'N', 1, timeout=1)
 
         self.port = port
 
@@ -253,7 +279,7 @@ class ArduinoBootloader(object):
 
     def close(self):
         """Close the serial communication port."""
-        if self.device.is_open:
+        if (not self.device is None) and self.device.is_open:
             self.device.close()
             self.device = None
 
