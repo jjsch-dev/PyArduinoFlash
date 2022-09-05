@@ -4,7 +4,7 @@
    It is used to write / verify and read the flash memory of an Arduino board.
    The input / output file format is Intel Hexadecimal."""
 
-VERSION = '0.2.0'
+VERSION = '0.3.0'
 
 import argparse
 import sys
@@ -18,6 +18,8 @@ parser = argparse.ArgumentParser(description="arduino flash utility")
 group = parser.add_mutually_exclusive_group()
 parser.add_argument("filename", help="filename in hexadecimal Intel format")
 parser.add_argument("--version", action="store_true", help="script version")
+parser.add_argument("-e", "--eeprom", action="store_true", help="program eeprom")
+parser.add_argument("-d", "--device", help="specify the device. Use net: for TCP connection")
 parser.add_argument("-b", "--baudrate", type=int, required=True, help="old bootolader (57600) Optiboot (115200)")
 parser.add_argument("-p", "--programmer", required=True, help="programmer version - Nano (Stk500v1) Mega (Stk500v2)")
 group.add_argument("-r", "--read", action="store_true", help="read the cpu flash memory")
@@ -51,7 +53,7 @@ def exit_by_error(msg):
     sys.exit(0)
 
 
-if prg.open(speed=args.baudrate):
+if prg.open(port=args.device, speed=args.baudrate):
     print("AVR device initialized and ready to accept instructions")
     address = 0
     if not prg.board_request():
@@ -65,6 +67,7 @@ if prg.open(speed=args.baudrate):
 
     print("cpu name: {}".format(ab.cpu_name))
 
+    page_size = ab.cpu_page_size if not args.eeprom else ab.eeprom_page_size
     if args.update:
         print("reading input file: {}".format(args.filename))
 
@@ -75,13 +78,13 @@ if prg.open(speed=args.baudrate):
         except (AddressOverlapError, HexRecordError):
             exit_by_error(msg="error, file format")
 
-        print("writing flash: {} bytes".format(ih.maxaddr()))
-        bar = progressbar.ProgressBar(max_value=ih.maxaddr(), prefix="writing ")
-        bar.start(init=True)
-        for address in range(0, ih.maxaddr(), ab.cpu_page_size):
-            buffer = ih.tobinarray(start=address, size=ab.cpu_page_size)
-            if not prg.write_memory(buffer, address):
-                exit_by_error(msg="writing flash memory")
+        print("writing {}: {} bytes".format("flash" if not args.eeprom else "eeprom", ih.maxaddr()))
+        bar = progressbar.ProgressBar(maxval=ih.maxaddr())
+        bar.start()
+        for address in range(0, ih.maxaddr(), page_size):
+            buffer = ih.tobinarray(start=address, size=page_size)
+            if not prg.write_memory(buffer, address, flash=not args.eeprom):
+                exit_by_error(msg="writing {} memory".format("flash" if not args.eeprom else "eeprom"))
 
             bar.update(address)
 
@@ -91,26 +94,31 @@ if prg.open(speed=args.baudrate):
 
     if args.update:
         max_address = ih.maxaddr()
-        print("reading and verifying flash memory")
+        print("reading and verifying {} memory".format("flash" if not args.eeprom else "eeprom"))
+
     elif args.read:
-        max_address = int(ab.cpu_page_size * ab.cpu_pages)
-        print("reading flash memory")
+        if not args.eeprom:
+            max_address = int(ab.cpu_page_size * ab.cpu_pages)
+        else:
+            max_address = int(ab.eeprom_page_size * ab.eeprom_pages)
+        print("reading {} memory".format("flash" if not args.eeprom else "eeprom"))
     else:
         max_address = 0
+        page_size = 0
 
-    bar = progressbar.ProgressBar(max_value=max_address, prefix="reading ")
-    bar.start(init=True)
+    bar = progressbar.ProgressBar(maxval=max_address)
+    bar.start()
 
-    for address in range(0, max_address, ab.cpu_page_size):
-        read_buffer = prg.read_memory(address, ab.cpu_page_size)
+    for address in range(0, max_address, page_size):
+        read_buffer = prg.read_memory(address, page_size, flash=not args.eeprom)
         if read_buffer is None:
-            exit_by_error(msg="reading flash memory")
+            exit_by_error(msg="reading {} memory".format("flash" if not args.eeprom else "eeprom"))
 
         if args.update:
-            if read_buffer != ih.tobinarray(start=address, size=ab.cpu_page_size):
+            if read_buffer != ih.tobinarray(start=address, size=page_size):
                 exit_by_error(msg="file not match")
         elif args.read:
-            for i in range(0, ab.cpu_page_size):
+            for i in range(0, page_size):
                 dict_hex[address + i] = read_buffer[i]
 
         bar.update(address)
@@ -125,7 +133,7 @@ if prg.open(speed=args.baudrate):
         except FileNotFoundError:
             exit_by_error(msg="the file cannot be created")
 
-    print("\nflash done, thank you")
+    print("\nprogram done, thank you")
 
     prg.leave_bootloader()
     prg.close()

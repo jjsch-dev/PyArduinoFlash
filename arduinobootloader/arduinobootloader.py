@@ -31,27 +31,27 @@ RESP_STK_OK = 0x10
 RESP_STK_IN_SYNC = 0x14
 """Start message of the Stk500v1"""
 
-AVR_ATMEL_CPUS = {0x1E9608: ["ATmega640", (128*2), 1024],
-                  0x1E9802: ["ATmega2561", (128*2), 1024],
-                  0x1E9801: ["ATmega2560", (128*2), 1024],
-                  0x1E9703: ["ATmega1280", (128*2), 512],
-                  0x1E9705: ["ATmega1284P", (128*2), 512],
-                  0x1E9704: ["ATmega1281", (128*2), 512],
-                  0x1E9782: ["AT90USB1287", (128 * 2), 512],
-                  0x1E9702: ["ATmega128", (128*2), 512],
-                  0x1E9602: ["ATmega64", (128*2), 256],
-                  0x1E9502: ["ATmega32", (64*2), 256],
-                  0x1E9403: ["ATmega16", (64*2), 128],
-                  0x1E9307: ["ATmega8", (32 * 2), 128],
-                  0x1E930A: ["ATmega88", (32*2), 128],
-                  0x1E9406: ["ATmega168", (64*2), 256],
-                  0x1E950F: ["ATmega328P", (64*2), 256],
-                  0x1E9514: ["ATmega328", (64*2), 256],
-                  0x1E9404: ["ATmega162", (64*2), 128],
-                  0x1E9402: ["ATmega163", (64*2), 128],
-                  0x1E9405: ["ATmega169", (64*2), 128],
-                  0x1E9306: ["ATmega8515", (32*2), 128],
-                  0x1E9308: ["ATmega8535", (32*2), 128]}
+AVR_ATMEL_CPUS = {0x1E9608: ["ATmega640", (128*2), 1024, 8, 512],
+                  0x1E9802: ["ATmega2561", (128*2), 1024, 8, 512],
+                  0x1E9801: ["ATmega2560", (128*2), 1024, 8, 512],
+                  0x1E9703: ["ATmega1280", (128*2), 512, 8, 512],
+                  0x1E9705: ["ATmega1284P", (128*2), 512, 8, 512],
+                  0x1E9704: ["ATmega1281", (128*2), 512, 8, 512],
+                  0x1E9782: ["AT90USB1287", (128 * 2), 512, 8, 512],
+                  0x1E9702: ["ATmega128", (128*2), 512, 8, 512],
+                  0x1E9602: ["ATmega64", (128*2), 256, 8, 256],
+                  0x1E9502: ["ATmega32", (64*2), 256, 4, 256],
+                  0x1E9403: ["ATmega16", (64*2), 128, 4, 128],
+                  0x1E9307: ["ATmega8", (32 * 2), 128, 4, 128],
+                  0x1E930A: ["ATmega88", (32*2), 128, 4, 128],
+                  0x1E9406: ["ATmega168", (64*2), 256, 4, 128],
+                  0x1E950F: ["ATmega328P", (64*2), 256, 4, 256],
+                  0x1E9514: ["ATmega328", (64*2), 256, 4, 256],
+                  0x1E9404: ["ATmega162", (64*2), 128, 4, 128],
+                  0x1E9402: ["ATmega163", (64*2), 128, 0, 128],
+                  0x1E9405: ["ATmega169", (64*2), 128, 4, 128],
+                  0x1E9306: ["ATmega8515", (32*2), 128, 4, 128],
+                  0x1E9308: ["ATmega8535", (32*2), 128, 0, 128]}
 
 """ 
 Dictionary with the list of Atmel AVR 8 CPUs used by Arduino boards. 
@@ -85,6 +85,12 @@ CMD_PROGRAM_FLASH_ISP = 0x13
 
 CMD_READ_FLASH_ISP = 0x14
 """Read the flash of the Stk500v2 Protocol"""
+
+CMD_PROGRAM_EEPROM_ISP = 0x15
+"""Write the EEPROM of the Stk500v2 Protocol"""
+
+CMD_READ_EEPROM_ISP = 0x16
+"""READ the EEPROM of the Stk500v2 Protocol"""
 
 CMD_LEAVE_PROGMODE_ISP = 0x11
 """Leave the programmer mode of the Stk500v2 Protocol"""
@@ -150,6 +156,8 @@ class ArduinoBootloader(object):
         self._cpu_name = ""
         self._cpu_page_size = 0
         self._cpu_pages = 0
+        self._eeprom_page_size = 0
+        self._eeprom_pages = 0
         self._programmer_name = ""
         self._programmer = None
 
@@ -199,6 +207,24 @@ class ArduinoBootloader(object):
         return self._cpu_pages
 
     @property
+    def eeprom_page_size(self):
+        """EEProm pages
+
+        :setter: pages
+        :type: int
+        """
+        return self._eeprom_page_size
+
+    @property
+    def eeprom_pages(self):
+        """EEProm pages
+
+        :setter: pages
+        :type: int
+        """
+        return self._eeprom_pages
+
+    @property
     def programmer_name(self):
         """Name given by Atmel to its programmers, for example (ISP_V2).
         Optiboot returns an empty string to decrease the footprint of the bootloader.
@@ -238,11 +264,15 @@ class ArduinoBootloader(object):
             self._cpu_name = list_cpu[0]
             self._cpu_page_size = list_cpu[1]
             self._cpu_pages = list_cpu[2]
+            self._eeprom_page_size = list_cpu[3]
+            self._eeprom_pages = list_cpu[4]
             return True
         except KeyError:
             self._cpu_name = "signature: {:06x}".format(signature)
             self._cpu_page_size = 0
             self._cpu_pages = 0
+            self._eeprom_page_size = 0
+            self._eeprom_pages = 0
             return False
 
     def _find_device_port(self):
@@ -636,8 +666,8 @@ class ArduinoBootloader(object):
                 msg[1] = (buff_len & 0xFF)
                 msg.extend(buffer)
                 """The seven bytes preceding the data are not used."""
-                if self._send_command(CMD_PROGRAM_FLASH_ISP, msg):
-                    return self._recv_answer(CMD_PROGRAM_FLASH_ISP)
+                if self._send_command(CMD_PROGRAM_FLASH_ISP if flash else CMD_PROGRAM_EEPROM_ISP, msg):
+                    return self._recv_answer(CMD_PROGRAM_FLASH_ISP if flash else CMD_PROGRAM_EEPROM_ISP)
             return False
 
         def read_memory(self, address, count, flash=True):
@@ -657,8 +687,8 @@ class ArduinoBootloader(object):
                 msg[0] = ((count >> 8) & 0xFF)
                 msg[1] = (count & 0xFF)
                 """The third byte is not used"""
-                if self._send_command(CMD_READ_FLASH_ISP, msg):
-                    if self._recv_answer(CMD_READ_FLASH_ISP):
+                if self._send_command(CMD_READ_FLASH_ISP if flash else CMD_READ_EEPROM_ISP, msg):
+                    if self._recv_answer(CMD_READ_FLASH_ISP if flash else CMD_READ_EEPROM_ISP):
                         """The end of data is marked with STATUS_OK"""
                         if self._answer[-1] == STATUS_CMD_OK:
                             del self._answer[-1]
@@ -671,7 +701,7 @@ class ArduinoBootloader(object):
             :return: True when success.
             :rtype: bool
             """
-            msg = bytearray("\xFA\xFE\x00")
+            msg = bytearray([0xFA,0xFE,0x00])
             if self._send_command(CMD_LEAVE_PROGMODE_ISP, msg):
                 return self._recv_answer(CMD_LEAVE_PROGMODE_ISP)
 
