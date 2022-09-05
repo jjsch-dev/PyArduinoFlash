@@ -7,6 +7,7 @@ The module implements the essential parts that Avrdude uses for the
 arduino and wiring protocols. In turn, they are a subset of the
 STK500 V1 and V2 protocols respectively.
 '''
+import socket
 from os import environ
 
 # From Kivy source code: On Android sys.platform returns 'linux2',
@@ -105,6 +106,36 @@ CPU_SIG2 = 1
 
 CPU_SIG3 = 2
 """Cpu signature part 3"""
+
+
+class SocketWrapper(object):
+    def __init__(self, host, port):
+        self._connected = False
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM | socket.SOCK_NONBLOCK)
+        self._socket.connect((host, port))
+        self._connected = True
+
+    @property
+    def timeout(self):
+        return 0
+
+    @timeout.setter
+    def timeout(self, value):
+        self._socket.settimeout(value)
+
+    @property
+    def is_open(self):
+        return self._connected
+
+    def read(self, size):
+        return self._socket.recv(size)
+
+    def write(self, buffer):
+        return self._socket.send(buffer)
+
+    def close(self):
+        self._socket.close()
+        self._connected = False
 
 class ArduinoBootloader(object):
     """Contains the two inner classes that support the Stk500 V1 and V2 protocols
@@ -260,7 +291,11 @@ class ArduinoBootloader(object):
                 if self.device:
                     self.device.USB_READ_TIMEOUT_MILLIS = 1000
             else:
-                self.device = serial.Serial(port, speed, 8, 'N', 1, timeout=1)
+                if port[0:4] == 'net:':
+                    port = port[4:]
+                    self.device = SocketWrapper(port, speed)
+                else:
+                    self.device = serial.Serial(port, speed, 8, 'N', 1, timeout=1)
 
         self.port = port
 
@@ -636,7 +671,7 @@ class ArduinoBootloader(object):
             :return: True when success.
             :rtype: bool
             """
-            msg = bytearray(3)
+            msg = bytearray("\xFA\xFE\x00")
             if self._send_command(CMD_LEAVE_PROGMODE_ISP, msg):
                 return self._recv_answer(CMD_LEAVE_PROGMODE_ISP)
 
