@@ -701,7 +701,7 @@ class ArduinoBootloader(object):
             :return: True when success.
             :rtype: bool
             """
-            msg = bytearray([0xFA,0xFE,0x00])
+            msg = bytearray(3)
             if self._send_command(CMD_LEAVE_PROGMODE_ISP, msg):
                 return self._recv_answer(CMD_LEAVE_PROGMODE_ISP)
 
