@@ -7,6 +7,7 @@ The module implements the essential parts that Avrdude uses for the
 arduino and wiring protocols. In turn, they are a subset of the
 STK500 V1 and V2 protocols respectively.
 '''
+import select
 import socket
 from os import environ
 
@@ -116,32 +117,67 @@ CPU_SIG3 = 2
 
 class SocketWrapper(object):
     def __init__(self, host, port):
+        self._host = host
+        self._port = port
+        self._socket = None
         self._connected = False
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM | socket.SOCK_NONBLOCK)
-        self._socket.connect((host, port))
+        self._timeout = 1
+        self.connect()
+
+    def __del__(self):
+        if self._socket:
+            self._socket.close()
+
+    def connect(self):
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.connect((self._host, self._port))
+        self._socket.settimeout(0)
         self._connected = True
 
     @property
     def timeout(self):
-        return 0
+        return self._timeout
 
     @timeout.setter
     def timeout(self, value):
-        self._socket.settimeout(value)
+        self._timeout = value
 
     @property
     def is_open(self):
         return self._connected
 
     def read(self, size):
-        return self._socket.recv(size)
+        init_time = time.time()
+        elapsed = time.time() - init_time
+        data = b''
+        while len(data) < size and elapsed <= self.timeout:
+            select_timeout = self.timeout - elapsed
+            if select_timeout < 0:
+                select_timeout = 0
+            rin, _, _ = select.select([self._socket], [], [], select_timeout)
+            if self._socket in rin:
+                d = self._socket.recv(size-len(data))
+                if d:
+                    data += d
+                else:
+                    break
+            elapsed = time.time() - init_time
+        return data
 
     def write(self, buffer):
-        return self._socket.send(buffer)
+        return self._socket.sendall(buffer)
 
     def close(self):
         self._socket.close()
         self._connected = False
+
+    def reset_input_buffer(self):
+        if self._socket:
+            self._socket.close()
+            del self._socket
+        self._connected = False
+        self.connect()
+
 
 class ArduinoBootloader(object):
     """Contains the two inner classes that support the Stk500 V1 and V2 protocols
